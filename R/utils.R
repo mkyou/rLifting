@@ -1,81 +1,134 @@
-#' Extensao Simetrica (Half-Point Symmetric Extension)
+#' Tratamento de padding/extensao de sinais
 #'
-#' Reflete os dados nas bordas para mitigar efeitos de contorno.
-#'
-#' @param x Vetor de entrada.
-#' @param n_left Quantidade de amostras para estender a esquerda.
-#' @param n_right Quantidade de amostras para estender a direita.
+#' @param x Sinal de entrada.
+#' @param n_left Amostras a esquerda.
+#' @param n_right Amostras a direita.
+#' @param mode Modo de extensao: "symmetric", "periodic", "zero".
 #'
 #' @keywords internal
-.sym_extension = function(x, n_left, n_right) {
+.pad_signal = function(x, n_left, n_right, mode = "symmetric") {
   n = length(x)
-
-  # Previne erros se a extensao for maior que o sinal
-  # (Nesse caso, repete-se a logica de reflexao, mas simplificamos aqui)
-  if (n_left > n) n_left = n
-  if (n_right > n) n_right = n
+  if (n == 0) return(x)
 
   left_pad = numeric(0)
   right_pad = numeric(0)
 
-  if (n_left > 0) left_pad = x[seq(n_left, 1, by = -1)]
-  if (n_right > 0) right_pad = x[seq(n, n - n_right + 1, by = -1)]
+  if (mode == "zero") {
+    if (n_left > 0)  left_pad  = rep(0, n_left)
+    if (n_right > 0) right_pad = rep(0, n_right)
+
+  } else if (mode == "periodic") {
+    # Logica Circular Robusta (funciona mesmo se n_pad > n)
+    if (n_left > 0) {
+      # Indices: n, n-1, ... (circular)
+      # Formula: (i - 1) %% n + 1
+      idx = (seq(n - n_left + 1, n) - 1) %% n + 1
+      # Ajuste: queremos os ultimos n_left elementos, em ordem
+      start_idx = n - (n_left %% n)
+      # Sequencia simples repetida
+      full_idx = rep(1:n, ceiling(n_left/n) + 1)
+      # Pega o trecho final correto
+      left_pad = tail(full_idx, n_left)
+      left_pad = x[left_pad]
+    }
+    if (n_right > 0) {
+      idx = (0:(n_right-1)) %% n + 1
+      right_pad = x[idx]
+    }
+
+  } else if (mode == "symmetric") {
+    # Half-Point Symmetric (Espelhamento incluindo a borda: 3 2 1 | 1 2 3)
+    # Robusto para n_pad > n (padrao "Triangular Wave")
+
+    if (n_left > 0) {
+      # Gera indices decrescentes a partir de 1: 1, 2, 3...
+      # Reflete: 1, 2, ... n, n, n-1...
+      # A logica mais simples para "Lifting" costuma ser apenas
+      # refletir a borda imediata
+      # Sequencia: 1, 1, 2, 3... ou 1, 2, 3...?
+      # Padrao Lifting (Sweldens): x[1-k] refere a x[k] (half-point)
+
+      # Sequencia bruta de indices espelhados: 1, 2, 3... n, n, n-1...
+      # Para n_left, queremos os indices voltando de 1.
+
+      # Implementacao simples: pmin(pmax(...)) funciona para 1 reflexao.
+      # Para multiplas, precisamos de logica de onda triangular.
+      # Como filtros wavelet sao curtos, raramente n_pad > n.
+      # Vamos manter a robustez para 1 reflexao completa (n_pad <= n)
+      # e truncar se for maior, para evitar complexidade desnecessaria no R.
+
+      # Se n_left > n, truncamos para n (limite fisico de espelhamento unico)
+      nl = min(n_left, n)
+      idx = seq(nl, 1, by = -1)
+      left_pad = x[idx]
+
+      # Se ainda faltar (caso extremo n_pad > n),
+      # preenche com a ultima borda (clamp)
+      if (n_left > n) {
+        extra = rep(x[n], n_left - n) # Repete o extremo oposto? Ou o proximo?
+        # Decisao de Design: Wavelet filters > sinal = Borda degenerada.
+        # Repetir o valor da borda mais distante (Clamp) e seguro.
+        left_pad = c(extra, left_pad)
+      }
+    }
+
+    if (n_right > 0) {
+      nr = min(n_right, n)
+      idx = seq(n, n - nr + 1, by = -1)
+      right_pad = x[idx]
+
+      if (n_right > n) {
+        extra = rep(x[1], n_right - n)
+        right_pad = c(right_pad, extra)
+      }
+    }
+  }
 
   c(left_pad, x, right_pad)
 }
 
-#' Aplica filtro com tratamento de borda e shift
+#' Aplica filtro lifting com suporte a bordas
 #'
-#' Wrapper que gerencia padding e alinhamento temporal (shift).
+#' @param x Sinal input.
+#' @param coeffs Coeficientes do filtro P ou U.
+#' @param start_idx Offset relativo.
+#' @param extension Modo de extensao.
 #'
-#' @param x Sinal de entrada.
-#' @param coeffs Coeficientes do filtro.
-#' @param start_idx Indice onde o filtro comeca relativo a posicao atual.
-#'                  Ex: 0 = alinhado, -1 = olha 1 para tras.
-#'
-#' @return Sinal filtrado alinhado.
 #' @keywords internal
-.apply_filter_lifting = function(x, coeffs, start_idx = 0) {
+.apply_filter_lifting = function(
+    x,
+    coeffs,
+    start_idx = 0,
+    extension = "symmetric"
+) {
   n_x = length(x)
   n_c = length(coeffs)
 
-  # 1. Definir a janela de leitura necessária
-  # Para calcular y[1], precisamos de x[1 + start_idx] até
-  # x[1 + start_idx + n_c - 1]
-  # O menor índice acessado será (1 + start_idx)
-  # O maior índice acessado será (n_x + start_idx + n_c - 1)
-
+  # 1. Definir janela de leitura
   min_idx = 1 + start_idx
   max_idx = n_x + start_idx + n_c - 1
 
-  # 2. Calcular quanto padding precisamos
+  # 2. Calcular padding necessario
   pad_left = 0
   pad_right = 0
 
   if (min_idx < 1) pad_left = 1 - min_idx
   if (max_idx > n_x) pad_right = max_idx - n_x
 
-  # Adicionamos a extensão simétrica
-  x_padded = .sym_extension(x, pad_left, pad_right)
+  # 3. Aplicar Padding
+  x_padded = .pad_signal(x, pad_left, pad_right, mode = extension)
 
-  # 3. Convolução Manual Vetorizada
-  # y inicializado com zeros
-  y = numeric(n_x)
-
-  # O indice '1' de x_padded corresponde ao índice '1 - pad_left' do original.
-  # Queremos acessar x_original[i + start_idx + k].
-  # No padded, isso equivale a x_padded[i + start_idx + k + pad_left].
-
+  # 4. Convolucao via Reduce (Substituindo loop for)
+  # O indice 1 original agora esta em (1 + pad_left) no x_padded
   base_idx = (1:n_x) + start_idx + pad_left
 
-  for (k in 1:n_c) {
-    # Pega a fatia do vetor deslocada para o k-ésimo coeficiente
-    # Indices para o coeficiente k (0-based no loop seria k-1, aqui 1-based é k)
-    # A fórmula é: soma( x[pos + (k-1)] * coeff[k] )
-
+  # Gera lista de vetores ponderados e soma tudo
+  components = lapply(1:n_c, function(k) {
     idx = base_idx + (k - 1)
-    y = y + x_padded[idx] * coeffs[k]
-  }
+    x_padded[idx] * coeffs[k]
+  })
+
+  y = Reduce(`+`, components)
 
   return(y)
 }

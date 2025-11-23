@@ -1,0 +1,197 @@
+---
+title: "Domando Ondaletas: De Haar à DB4 Customizada em Tempo Real"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Domando Ondaletas: De Haar à DB4 Customizada}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+devtools::load_all()
+# library(rLifting)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+O pacote rLifting não é apenas mais uma biblioteca de transformadas wavelet. Ele foi desenhado com dois pilares em mente: Customização Extrema via Lifting Scheme e Processamento em Tempo Real (Causal).
+
+Neste tutorial, vamos:
+- Usar o básico (Haar).
+- "Hackear" a ondaleta DB4 (Daubechies 8-taps) usando coeficientes de um software externo (MATLAB).
+- Aplicar essa ondaleta complexa em um fluxo de Denoising em Tempo Real.
+
+## O Básico: Haar e Denoising Offline
+
+Antes de complicar, vamos garantir que o básico funciona. A ondaleta Haar é a mais simples (1 passo de predição, 1 passo de atualização).
+
+```{r}
+# 1. Criar um sinal de teste (Doppler)
+# A funcao .generate_signal e interna do pacote para benchmarks
+sinal_limpo = rLifting:::.generate_signal("doppler", n = 512)
+ruido = rnorm(512, sd = 0.1)
+sinal_ruidoso = sinal_limpo + ruido
+
+# 2. Carregar o esquema Haar
+esquema_haar = lifting_scheme("haar")
+
+# 3. Denoising Offline (Global)
+sinal_filtrado = denoise_signal_offline(
+  sinal_ruidoso, 
+  esquema_haar, 
+  method = "soft", 
+  alpha = 0.3 # Ajuste fino do threshold
+)
+
+# Visualizacao
+par(mfrow=c(1,3))
+plot(sinal_limpo, type='l', main="Original", col="black")
+plot(sinal_ruidoso, type='l', main="Ruidoso", col="gray")
+lines(sinal_limpo, col="black", lty=2)
+plot(sinal_filtrado, type='l', main="Denoised (Haar)", col="blue")
+```
+
+2. O Desafio: Implementando a DB4 (Daubechies 4) Manualmente
+
+A ondaleta db4 geralmente requer coeficientes irracionais complexos. Vamos supor que você encontrou uma fatoração específica em um paper ou no MATLAB e quer trazê-la para o R.
+
+A Fonte da Verdade: Utilizaremos os coeficientes desta matriz polifásica (extraída de uma saída do comando liftwave('db4')):
+
+- Passo 1 (Predict): $P_1(z)=0.32227589z1$
+- Passo 2 (Update): $U_1(z)=−1.11712361z0−0.30014226z−1$
+- Passo 3 (Predict): $P_2(z)=−0.01880835z2+0.11764809z1$
+- Passo 4 (Update): $U_2(z)=2.13181671z0+0.63642827z−1$
+- Passo 5 (Predict): $P_3(z)=0.46908348z0−0.14003924z−1+0.02479124z−2$
+- Normalização: $K=0.73412453, 1/K=1.36216672$
+
+Nota Técnica: Invertemos o sinal dos coeficientes "Predict" da fonte original pois nossa engine opera com d = odd - P(even), enquanto a matriz polifásica opera com somas.
+
+Implementação com lift_step
+
+Vamos construir passo a passo. O segredo aqui é o start_idx.
+
+- Se o polinômio é $c_0z^k+c_1z^{k−1} + \dots$, o vetor coeffs deve estar ordenado por potência e o start_idx alinha a primeira posição.
+- z1 (futuro) requer start_idx = 1.
+- z−1 (passado) requer start_idx = -1.
+
+```{r}
+# Coeficientes brutos (extraidos da imagem)
+# Passo 1 (Predict): Termo z^1.
+# Coeff invertido de -0.322... para positivo.
+p1 = lift_step(
+  type = "predict", 
+  coeffs = c(0.32227589), 
+  start_idx = 1 # z^1 aponta para frente
+)
+
+# Passo 2 (Update): Termos z^0, z^-1. 
+# Ordem no vetor: [z^-1, z^0] para alinhamento correto com start_idx = -1
+# Coeffs mantidos (Update soma).
+u1 = lift_step(
+  type = "update",
+  coeffs = c(-0.30014226, -1.11712361), 
+  start_idx = -1
+)
+
+# Passo 3 (Predict): Termos z^2, z^1.
+# Invertendo sinais da fonte. Fonte: -0.018(z^2), +0.117(z^1).
+# Nosso P: +0.018, -0.117.
+# Ordem vetor: [z^1, z^2] com start_idx = 1
+p2 = lift_step(
+  type = "predict",
+  coeffs = c(-0.11764809, 0.01880835), 
+  start_idx = 1
+)
+
+# Passo 4 (Update): Termos z^0, z^-1.
+# Mantem sinais. Ordem [z^-1, z^0].
+u2 = lift_step(
+  type = "update",
+  coeffs = c(0.63642827, 2.13181671),
+  start_idx = -1
+)
+
+# Passo 5 (Predict): Termos z^0, z^-1, z^-2.
+# Inverte sinais. Fonte: -0.469, +0.140, -0.024.
+# Nosso P: +0.469, -0.140, +0.024.
+# Ordem vetor: [z^-2, z^-1, z^0] com start_idx = -2
+p3 = lift_step(
+  type = "predict",
+  coeffs = c(0.02479124, -0.14003924, 0.46908348),
+  start_idx = -2
+)
+
+# Montando a Ondaleta
+db4_custom = lifting_scheme(
+  wavelet = "DB4_MATLAB",
+  custom_steps = list(p1, u1, p2, u2, p3),
+  custom_norm = c(0.73412453, 1.36216672)
+)
+
+print(db4_custom)
+```
+
+Validando a Criatura
+
+Será que implementamos certo? Vamos rodar o diagnóstico. Esperamos:
+
+- Reconstrução Perfeita (Erros ~1e-14).
+- Momentos Nulos: A DB4 deve ter 4 momentos nulos (Graus 0, 1, 2, 3).
+
+```{r}
+# Rodando diagnostico fisico
+diagnose_wavelet(db4_custom, list(
+  is_ortho = TRUE,       # DB4 teorica e ortogonal
+  vm_degrees = c(0, 1, 2, 3), # Deve passar em todos
+  max_taps = 8           # Largura esperada do filtro
+))
+```
+
+3. Real-Time Denoising com DB4
+
+Agora, o "Grand Finale". Vamos usar essa ondaleta complexa para filtrar um sinal em tempo real (simulado), amostra por amostra.
+
+Utilizaremos o denoise_signal_causal, que internamente cria um buffer deslizante e aplica o threshold adaptativo recursivo (Liu et al., 2014).
+
+```{r}
+# Sinal mais complexo: HeaviSine (com saltos)
+sinal_complexo = rLifting:::.generate_signal("heavisine", n = 1024)
+ruido_complexo = rnorm(1024, sd = 0.2)
+entrada = sinal_complexo + ruido_complexo
+
+# Processamento Causal
+# Note: Usamos "semisoft" shrinkage que e melhor para preservar picos
+saida_tempo_real = denoise_signal_causal(
+  entrada,
+  scheme = db4_custom, # Nossa ondaleta customizada!
+  window_size = 256,   # Tamanho da janela movel
+  method = "semisoft",
+  alpha = 0.5,         # Ajuste de memoria do threshold
+  beta = 1.2
+)
+
+# Comparacao Visual
+# Zoom em um trecho para ver o delay e a limpeza
+idx_zoom = 400:600
+
+plot(entrada[idx_zoom], type='l', col="lightgray", 
+     main="Real-Time Denoising: DB4 Customizada", ylab="Amplitude")
+lines(sinal_complexo[idx_zoom], col="black", lwd=2, lty=2)
+lines(saida_tempo_real[idx_zoom], col="red", lwd=2)
+
+legend("topright", 
+       legend=c("Ruidoso", "Original", "Denoised (Causal)"),
+       col=c("lightgray", "black", "red"), 
+       lty=c(1, 2, 1), lwd=c(1, 2, 2))
+```
+
+Observe que a linha vermelha (Denoised) segue o sinal original. Pode haver um leve atraso (lag) nas mudanças bruscas devido à causalidade do filtro e ao tamanho da janela, mas o ruído de alta frequência é removido eficientemente.
+
+Conclusão
+
+Com o rLifting, você não está preso às ondaletas que o desenvolvedor escolheu. Se existe uma fatoração matemática para um filtro, você pode implementá-la em linhas de código e aplicá-la imediatamente em fluxos de dados em tempo real.

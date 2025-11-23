@@ -3,9 +3,11 @@
 #' Executa a transformada wavelet via esquema de lifting.
 #' Suporta decomposicao multinivel.
 #'
-#' @param signal Vetor numerico contendo o sinal (dados tabulares).
+#' @param signal Vetor numerico contendo o sinal.
 #' @param scheme Objeto da classe 'lifting_scheme'.
 #' @param levels Inteiro. Numero de niveis de decomposicao.
+#' @param extension Modo de tratamento de borda: "symmetric" (padrao),
+#' "periodic", "zero".
 #'
 #' @return Objeto S3 da classe 'lwt'. Contem:
 #' \item{coeffs}{Lista com detalhes (d1..dn) e aproximacao (an).}
@@ -17,7 +19,7 @@
 #' sch = lifting_scheme("haar")
 #' res = lwt(data, sch, levels = 2)
 #' print(res)
-lwt = function(signal, scheme, levels = 1) {
+lwt = function(signal, scheme, levels = 1, extension = "symmetric") {
 
   # Validacoes
   if (!inherits(scheme, "lifting_scheme")) {
@@ -28,9 +30,21 @@ lwt = function(signal, scheme, levels = 1) {
     stop("Sinal muito curto para o numero de niveis solicitado.")
   }
 
+  # --- WARNING DE SUPORTE ---
+  # Se o sinal no ultimo nivel for muito curto (< 4 amostras),
+  # filtros complexos (CDF9/7, DB4) vao sofrer distorcao severa.
+  final_len = n / (2^levels)
+  if (final_len < 4) {
+    warning(sprintf(
+      "Sinal residual no nivel %d tem apenas %.1f amostras. %s",
+      levels, final_len, "Artefatos de borda podem dominar."
+    ))
+  }
+
   # Inicializacao
   current_app = signal
   details_list = list()
+  boundary_mode = match.arg(extension, c("symmetric", "periodic", "zero"))
 
   for (j in 1:levels) {
     n_curr = length(current_app)
@@ -47,7 +61,10 @@ lwt = function(signal, scheme, levels = 1) {
       if (step$type == "predict") {
         # d = odd - P(even)
         # step$coeffs contem os coeficientes de P
-        prediction = .apply_filter_lifting(even, step$coeffs)
+        prediction = .apply_filter_lifting(
+          even, step$coeffs,
+          step$start_idx, extension
+        )
 
         # Garante dimensoes iguais (pode ocorrer diferenca de 1 em odd/even)
         len_min = min(length(odd), length(prediction))
@@ -56,7 +73,10 @@ lwt = function(signal, scheme, levels = 1) {
       } else if (step$type == "update") {
         # a = even + U(d)
         # step$coeffs contem os coeficientes de U
-        update_val = .apply_filter_lifting(odd, step$coeffs)
+        update_val = .apply_filter_lifting(
+          odd, step$coeffs,
+          step$start_idx, extension
+        )
 
         len_min = min(length(even), length(update_val))
         even = even[1:len_min] + update_val[1:len_min]
@@ -83,13 +103,16 @@ lwt = function(signal, scheme, levels = 1) {
       coeffs = coeffs_out,
       scheme = scheme,
       levels = levels,
-      original_len = n
+      original_len = n,
+      extension = boundary_mode # Guardamos o modo usado
     ),
     class = "lwt"
   )
 }
 
 #' Print method para LWT
+#' @param x Objeto da classe lwt.
+#' @param ... Argumentos adicionais (nao utilizados).
 #' @export
 print.lwt = function(x, ...) {
   cat("--- LWT Decomposition ---\n")
