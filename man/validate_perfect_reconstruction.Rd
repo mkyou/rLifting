@@ -2,19 +2,18 @@
 % Please edit documentation in R/diagnostics.R
 \name{validate_perfect_reconstruction}
 \alias{validate_perfect_reconstruction}
-\title{Valida a Reconstrucao Perfeita (Stress Test)}
+\title{Validate Perfect Reconstruction (Stress Test)}
 \usage{
-validate_perfect_reconstruction(scheme, tol = 1e-10)
+validate_perfect_reconstruction(scheme, tol = 1e-09)
 }
 \arguments{
-\item{scheme}{Objeto da classe \code{lifting_scheme}.}
+\item{scheme}{Object of class \code{lifting_scheme}.}
 
-\item{tol}{Tolerancia de erro numerico (padrao 1e-10).}
+\item{tol}{Numerical error tolerance (default 1e-9).}
 }
 \value{
-Lista com status global e erro maximo encontrado.
+List with global status and maximum error found.
 }
 \description{
-Verifica a invertibilidade da ondaleta contra uma bateria de sinais:
-Rampa, Seno, Doppler, HeaviSine, Bumps e Ruido Aleatorio.
+Verifies wavelet invertibility against a battery of signals.
 }

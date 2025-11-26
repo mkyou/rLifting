@@ -1,16 +1,16 @@
-#' Denoising Offline (Nao-Causal / Global)
+#' Offline Denoising (Non-Causal / Global)
 #'
-#' Aplica a ondaleta em todo o sinal de uma vez. Usa estatisticas globais
-#' para o calculo do threshold recursivo (Eq. 9).
+#' Applies the wavelet to the entire signal at once. Uses global statistics
+#' for recursive threshold calculation (Eq. 9).
 #'
-#' @param signal Sinal completo.
-#' @param scheme Objeto lifting_scheme.
-#' @param alpha Parametro de threshold recursivo.
-#' @param beta Fator de escala do threshold.
-#' @param method Metodo ('hard', 'soft', 'semisoft').
-#' @param extension Modo de extensao ('symmetric', 'periodic', 'zero').
+#' @param signal Complete signal.
+#' @param scheme `lifting_scheme` object.
+#' @param alpha Recursive threshold parameter.
+#' @param beta Threshold scale factor.
+#' @param method Method ('hard', 'soft', 'semisoft').
+#' @param extension Extension mode ('symmetric', 'periodic', 'zero').
 #'
-#' @return Sinal filtrado.
+#' @return Filtered signal.
 #' @export
 denoise_signal_offline = function(
     signal,

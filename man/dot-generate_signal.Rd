@@ -2,21 +2,21 @@
 % Please edit documentation in R/diagnostics.R
 \name{.generate_signal}
 \alias{.generate_signal}
-\title{Gera sinais padrao para testes de ondaletas (Benchmark Donoho-Johnstone)}
+\title{Generate standard signals for wavelet testing (Donoho-Johnstone Benchmark)}
 \usage{
 .generate_signal(type, n = 512)
 }
 \arguments{
-\item{type}{Tipo do sinal: "const", "ramp", "poly2", "poly3", "random",
+\item{type}{Signal type: "const", "ramp", "poly2", "poly3", "random",
 "impulse", "sine", "doppler", "heavisine", "bumps".}
 
-\item{n}{Tamanho do sinal (padrao 512).}
+\item{n}{Signal length (default 512).}
 }
 \value{
-Vetor numerico.
+Numeric vector.
 }
 \description{
-Cria sinais sinteticos classicos para validacao de wavelets.
-As formulas sao baseadas em Donoho & Johnstone e no artigo de Liu et al.
+Creates synthetic classic signals for wavelet validation.
+Formulas are based on Donoho & Johnstone and Liu et al.
 }
 \keyword{internal}

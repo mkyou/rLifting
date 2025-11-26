@@ -1,18 +1,19 @@
-#' Cria um processador de fluxo (stream) Wavelet Adaptativo
+#' Create an Adaptive Wavelet Stream Processor
 #'
-#' Gera uma funcao stateful que implementa o metodo de Liu et al. completo:
-#' Janela Movel + Decomposicao Lifting + Threshold Recursivo Adaptativo.
+#' Generates a stateful function that implements the complete method from Liu et al.:
+#' Moving Window + Lifting Decomposition + Recursive Adaptive Thresholding.
 #'
-#' @param scheme Objeto `lifting_scheme`.
-#' @param window_size Tamanho da janela (W). Ex: 256.
-#' @param alpha Parametro de decaimento do threshold (Eq 9).
-#' @param beta Fator de ganho do threshold (Eq 9).
-#' @param method Metodo de encolhimento: "hard", "soft", "semisoft".
-#' @param extension Tratamento de borda ('symmetric', 'periodic').
+#' @param scheme A `lifting_scheme` object.
+#' @param window_size Window size (W). Must be a power of 2 (e.g., 128, 256)
+#'        according to the paper, though the code accepts any integer > 8.
+#' @param alpha Threshold decay parameter (Eq 9).
+#' @param beta Threshold gain factor (Eq 9).
+#' @param method Shrinkage method: "hard", "soft", "semisoft".
+#' @param extension Boundary handling ('symmetric', 'periodic').
 #'
-#' @return Uma funcao closure `processor(new_sample)` que aceita um unico
-#' valor numerico e retorna o valor filtrado correspondente. O estado
-#' (buffer) e mantido entre chamadas.
+#' @return A closure function `processor(new_sample)` that accepts a single
+#' numeric value and returns the corresponding filtered value. The state (buffer)
+#' is maintained between calls.
 #' @export
 new_wavelet_stream = function(
     scheme,
@@ -21,68 +22,100 @@ new_wavelet_stream = function(
     beta = 1.2,
     method = "semisoft",
     extension = "symmetric"
-    ) {
+) {
 
+  # Validation: Minimum of 8 ensures numerical
+  # stability when the window finally fills.
+  if (window_size < 8) stop("window_size must be at least 8.")
+
+  # Internal state (Closure)
   buffer = numeric(0)
 
   processor = function(new_sample) {
-    # 1. Atualiza buffer
+    # 1. Input Validation
+    if (length(new_sample) != 1) {
+      stop("Stream processor accepts only one sample at a time.")
+    }
+    if (is.na(new_sample) || is.infinite(new_sample)) {
+      warning("Invalid sample (NA or Inf) received. Returning as is.")
+      return(new_sample)
+    }
+
+    # 2. Update buffer
     buffer <<- c(buffer, new_sample)
     n_curr = length(buffer)
 
+    # Maintain sliding window size
     if (n_curr > window_size) {
       excess = n_curr - window_size
       buffer <<- buffer[(excess + 1):n_curr]
       n_curr = window_size
     }
 
-    # Fase de aquecimento
+    # 3. Filling Phase (Liu et al. Implementation)
+    # "At the first stage... when sample data are not long enough...
+    # we keep the data as such." (Liu et al., 2014)
+    # We only process when the buffer is FULL (n_curr == window_size).
     if (n_curr < window_size) {
       return(new_sample)
     }
 
-    # 2. Forward LWT
-    lwt_obj = lwt(buffer, scheme, levels = 1, extension = extension)
+    # 4. Processing (Protected)
+    result = tryCatch({
+      # Forward LWT
+      # Now we are guaranteed to have 'window_size' samples.
+      lwt_obj = lwt(buffer, scheme, levels = 1, extension = extension)
 
-    # 3. Calculo dinamico do Threshold
-    # O lambda muda a cada amostra dependendo do ruido atual da janela
-    lambdas = compute_adaptive_threshold(lwt_obj, alpha, beta)
+      # Dynamic Threshold Calculation
+      lambdas = compute_adaptive_threshold(lwt_obj, alpha, beta)
 
-    # 4. Aplicar Threshold (suporta multi-nivel se necessario)
-    for (lvl_name in names(lambdas)) {
-      coeffs_old = lwt_obj$coeffs[[lvl_name]]
-      lam = lambdas[[lvl_name]]
+      # Apply Thresholding
+      for (lvl_name in names(lambdas)) {
+        coeffs_old = lwt_obj$coeffs[[lvl_name]]
+        lam = lambdas[[lvl_name]]
+        coeffs_new = threshold(coeffs_old, lam, method)
+        lwt_obj$coeffs[[lvl_name]] = coeffs_new
+      }
 
-      # Aplica a funcao de encolhimento (soft/hard/semisoft)
-      coeffs_new = threshold(coeffs_old, lam, method)
+      # Reconstruction
+      rec = ilwt(lwt_obj)
 
-      lwt_obj$coeffs[[lvl_name]] = coeffs_new
-    }
+      # Return only the last sample (Causal)
+      val = rec[length(rec)]
 
-    # 5. Reconstrucao
-    rec = ilwt(lwt_obj)
+      if (is.na(val)) return(new_sample)
 
-    # 6. Output Causal
-    return(rec[length(rec)])
+      return(val)
+
+    }, error = function(e) {
+      # Fallback
+      return(new_sample)
+    })
+
+    return(result)
   }
 
   return(processor)
 }
 
-#' Denoising causal em lote (simulacao fiel)
+#' Causal Batch Denoising (High Performance C++)
 #'
-#' Processa um sinal completo simulando a chegada sequencial dos dados.
-#' Garante que o resultado seja identico ao uso em tempo real.
+#' Processes a complete signal simulating the sequential arrival of data.
+#' Optimized with a C++ loop to avoid R overhead in simulations.
 #'
-#' @param signal Vetor completo do sinal ruidoso.
-#' @param scheme Objeto `lifting_scheme`.
-#' @param window_size Tamanho da janela.
-#' @param alpha Parametro de decaimento do threshold (Eq 9).
-#' @param beta Fator de ganho do threshold (Eq 9).
-#' @param method Metodo de thresholding.
-#' @param extension Tratamento de borda ('symmetric', 'periodic').
+#' @param signal Complete vector of the noisy signal.
+#' @param scheme `lifting_scheme` object.
+#' @param window_size Window size.
+#' @param alpha Threshold decay parameter (Eq 9).
+#' @param beta Threshold gain factor (Eq 9).
+#' @param method Thresholding method ("soft", "hard", "semisoft").
+#' @param extension Boundary treatment ('symmetric', 'periodic').
+#' @param update_freq Integer. Frequency of threshold updates.
+#' 1 = every sample (slowest, most accurate).
+#' 10 = every 10 samples (faster, approximation).
+#' Defaults to 1 for backward compatibility.
 #'
-#' @return Vetor filtrado (mesmo comprimento).
+#' @return Filtered vector (same length).
 #' @export
 denoise_signal_causal = function(
     signal,
@@ -91,29 +124,23 @@ denoise_signal_causal = function(
     alpha = 0.3,
     beta = 1.2,
     method = "semisoft",
-    extension = "symmetric"
-    ) {
+    extension = "symmetric",
+    update_freq = 1
+) {
 
-  n = length(signal)
-  output = numeric(n)
+  ext_int = switch(extension, "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, 1L)
 
-  # Passa alpha/beta para o construtor
-  stream_processor = new_wavelet_stream(
-    scheme, window_size,
-    alpha, beta, method, extension
-    )
+  output = run_turbo_batch(
+    as.numeric(signal),
+    scheme$steps,
+    as.numeric(scheme$normalization),
+    as.integer(window_size),
+    as.numeric(alpha),
+    as.numeric(beta),
+    as.character(method),
+    as.integer(ext_int),
+    as.integer(update_freq)
+  )
 
-  pb = NULL
-  if (n > 5000) {
-    cat("Processando Batch Causal Adaptativo...\n")
-    pb = txtProgressBar(min = 0, max = n, style = 3)
-  }
-
-  for (i in 1:n) {
-    output[i] = stream_processor(signal[i])
-    if (!is.null(pb) && i %% 100 == 0) setTxtProgressBar(pb, i)
-  }
-
-  if (!is.null(pb)) close(pb)
   return(output)
 }

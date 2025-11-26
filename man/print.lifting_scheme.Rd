@@ -7,9 +7,9 @@
 \method{print}{lifting_scheme}(x, ...)
 }
 \arguments{
-\item{x}{Objeto lifting_scheme.}
+\item{x}{lifting_scheme object.}
 
-\item{...}{Argumentos adicionais.}
+\item{...}{additional arguments.}
 }
 \description{
 Print method

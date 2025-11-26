@@ -1,0 +1,253 @@
+---
+title: "Guia de uso geral: rLifting"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Guia de uso geral}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Este guia introduz as funcionalidades principais do pacote `rLifting`.
+Focaremos na aplicação prática de ondaletas para remoção de ruído (*denoising*), comparando a abordagem clássica (*offline*/global) com a abordagem de tempo real (causal/adaptativa).
+
+## Configurações iniciais
+
+Para utilizar o `rLifting`, certifique-se de que o pacote está instalado e carregado.
+Para este tutorial, também precisaremos das bibliotecas `ggplot2` e `tidyr`.
+
+```{r}
+# Instalação (se estiver local)
+# install.packages("path/to/rLifting", repos = NULL, type = "source")
+
+#library(rLifting)
+library(ggplot2)
+library(tidyr)
+
+devtools::load_all()
+```
+
+## Exemplo prático: Haar e a função Doppler
+
+Começaremos com a ondaleta de Haar.
+Apesar de sua simplicidade, e de não ser a mais recomendada para sinais suaves, ela será útil para entender o funcionamento do algoritmo.
+A utilizaremos para tratar a função Doppler com $\left(T = 2048\right)$ pontos observados contaminados por ruído.
+
+```{r}
+# Gerando dados de teste
+set.seed(2025)
+n_amostras = 2048
+sinal_puro = rLifting:::.generate_signal("doppler", n = n_amostras)
+
+# Adicionando ruído Gaussiano
+ruido = rnorm(n_amostras, sd = 0.5)
+sinal_ruidoso = sinal_puro + ruido
+
+# Preparando DataFrame para ggplot
+df_sinal = data.frame(
+  Index = 1:n_amostras,
+  Original = sinal_puro,
+  Ruidoso = sinal_ruidoso
+)
+
+# Visualizando
+ggplot(df_sinal, aes(x = Index)) +
+  geom_line(aes(y = Ruidoso, color = "Ruído"), alpha = 0.6, size = 0.3) +
+  geom_line(aes(y = Original, color = "Original"), size = 0.8) +
+  scale_color_manual(values = c("Original" = "black", "Ruído" = "grey30")) +
+  labs(
+    title = "Função doppler com ruído", 
+    y = "Amplitude", 
+    color = "Legenda"
+    ) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+### Suavização *offline* (global)
+
+A função `denoise_signal_offline` processa o vetor inteiro de uma vez.
+Ela usa estatísticas globais do sinal para definir o limiar de corte (*threshold*).
+
+**Nota sobre Extensão**: ondaletas precisam tratar as bordas do sinal.
+O padrão do pacote é `extension = "symmetric"` (espelhamento), que reduz artefatos nas pontas.
+Outras opções são `"periodic"` (circular) e `"zero"` (*padding* com zeros).
+Isso não é um problema para a ondaleta de Haar, mas para as demais ondaletas é necessário pensar na extensão com cuidado.
+
+```{r}
+# Definição do esquema Lifting
+esquema_haar = lifting_scheme("haar")
+
+# Aplicação de filtro
+sinal_haar = denoise_signal_offline(
+  sinal_ruidoso, 
+  scheme = esquema_haar,
+  method = "soft", # o método de thresholding. Outras opções são "hard" e "semisoft"
+  extension = "symmetric"
+)
+
+
+df_sinal$Offline = sinal_haar
+
+ggplot(subset(df_sinal, Index >= 500 & Index <= 1000), aes(x = Index)) +
+  geom_line(aes(y = Ruidoso, color = "Ruído"), alpha = 0.5) +
+  geom_line(aes(y = Original, color = "Original"), linetype = "dashed") +
+  geom_line(aes(y = Offline, color = "Filtrado (Haar)"), size = 1) +
+  scale_color_manual(
+    values = c(
+      "Original" = "black", 
+      "Ruído" = "grey30", 
+      "Filtrado (Haar)" = "royalblue")
+    ) +
+  labs(
+    title = "Denoising Offline (Zoom)", 
+    subtitle = "Note os 'degraus' característicos da Haar", 
+    y = "Amplitude"
+    ) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+### Suavizador causal (tempo real)
+
+Em aplicações de monitoramento (sensores, finanças), não temos acesso ao "futuro" do sinal.
+O suavizador causal utiliza uma janela deslizante e um limiar adaptativo recursivo (baseado em Liu et al., 2014).
+
+Este método (do modo que é implementado no pacote `rLifting`) introduz dois fenômenos menos desejáveis: - Warm-up (Aquecimento): As primeiras amostras (tamanho da janela) não são filtradas (retorna o original), pois o algoritmo precisa acumular informação antes de começar a suavização.
+- Lag (Atraso): O filtro demora um pouco mais para responder a mudanças bruscas, pois só "vê" o passado.
+
+```{r}
+# Definição de tamanho da janela W
+janela = 256
+
+# Processamento causal
+sinal_causal = denoise_signal_causal(
+  sinal_ruidoso,
+  scheme = esquema_haar,
+  window_size = janela,
+  method = "semisoft", # Semisoft tende a preservar melhor a amplitude
+  alpha = 0.3,
+  beta = 1.2
+)
+
+df_sinal$Causal = sinal_causal
+
+# Visualização comparativa (Focando no lag e suavização)
+# Vamos dar zoom numa área de transição rápida
+ggplot(
+  subset(df_sinal, Index >= 200 & Index <= 800), 
+  aes(x = Index)
+  ) +
+  # Camada de ruído (fundo)
+  geom_line(aes(y = Ruidoso), color = "grey30", alpha = 0.8) +
+  # Referência
+  geom_line(
+    aes(y = Original, color = "Original"), 
+    linetype = "dashed", alpha = 0.7
+    ) +
+  # Comparação
+  geom_line(aes(y = Offline, color = "Offline (Global)"), size = 0.8) +
+  geom_line(aes(y = Causal, color = "Causal (Real-Time)"), size = 0.8) +
+  # Marcador de Janela
+  geom_vline(xintercept = janela, linetype = "dotted", color = "black") +
+  annotate(
+    "text", 
+    x = janela + 5, 
+    y = max(sinal_puro) + 1, 
+    label = "Fim Warm-up",
+    hjust = 0, 
+    color = "black", 
+    size = 3
+    ) +
+  
+  scale_color_manual(
+    values = c(
+      "Original" = "black",
+      "Offline (Global)" = "royalblue",
+      "Causal (Real-Time)" = "firebrick"
+      )
+    ) +
+  labs(
+    title = "Comparativo: Offline vs Causal",
+    subtitle = "O Causal remove parte do ruído (fundo cinza) mas apresenta atraso de fase natural",
+    y = "Amplitude"
+    ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+## Informações adicionais e referências
+
+### Métodos de *thresholding*
+
+O pacote disponibiliza três métodos principais para corte de coeficientes.
+A escolha impacta diretamente no viés e na variância do resultado.
+São eles:
+
+-   `hard`: mantém a amplitude original, mas pode gerar artefatos abruptos.
+-   `soft`: contrai tudo em direção a zero. Resultado muito suave, mas com viés de amplitude.
+-   `semisoft`: (Padrão) tenta equilibrar os dois, usando uma função hiperbólica $\sqrt{(x^2−λ^2)}$.
+
+```{r}
+x_vals = seq(-3, 3, by = 0.01)
+lambda = 1
+
+df_thresh = data.frame(
+  Input = x_vals,
+  Hard = rLifting::threshold_hard(x_vals, lambda),
+  Soft = rLifting::threshold_soft(x_vals, lambda),
+  Semisoft = rLifting::threshold_semisoft(x_vals, lambda)
+) |> pivot_longer(-Input, names_to = "Metodo", values_to = "Output")
+
+ggplot(df_thresh, aes(x = Input, y = Output, color = Metodo)) +
+  geom_abline(
+    slope = 1, intercept = 0, 
+    linetype = "dotted", color = "gray30"
+    ) +
+  geom_line(size = .55) +
+  scale_color_manual(
+    values = c(
+      "Hard" = "firebrick", 
+      "Soft" = "royalblue", 
+      "Semisoft" = "black")
+    ) +
+  labs(title = "Funções de Thresholding (lambda = 1)", y = "Saída") +
+  theme_bw()
+```
+
+### Ondaletas disponíveis
+
+Além da `haar`, o pacote já inclui nativamente:
+
+-   `db2`: Daubechies 4-taps (assimétrica).
+
+-   `cdf53` (ou bior2.2): LeGall 5/3 (linear, rápida).
+
+-   `cdf97` (ou bior4.4): Cohen-Daubechies-Feauveau 9/7 (suave, usada no JPEG2000).
+
+-   `dd4`: Deslauriers-Dubuc (interpoladora cúbica).
+
+### Próximos passos
+
+O `rLifting` é extensível.
+Confira os outros guias para maior aprofundamento.
+
+1.  Ondaletas customizadas: aprenda a implementar ondaletas mais complexas (como DB4) manualmente usando a API `lift_steps`.
+2.  Comparações estatísticas: comparativos entre os diferentes métodos de *thresholding*, suavizadores causais e não-causais e ondaletas, baseados em viés, qualidade do sinal, e erro quadrático médio.
+3.  Performance computacional: estudo de performance computacional do método de suavização em tempo real.

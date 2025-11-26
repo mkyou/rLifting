@@ -2,15 +2,15 @@
 % Please edit documentation in R/lwt.R
 \name{print.lwt}
 \alias{print.lwt}
-\title{Print method para LWT}
+\title{Print method for LWT}
 \usage{
 \method{print}{lwt}(x, ...)
 }
 \arguments{
-\item{x}{Objeto da classe lwt.}
+\item{x}{Object of class \code{lwt}.}
 
-\item{...}{Argumentos adicionais (nao utilizados).}
+\item{...}{Additional arguments (not used).}
 }
 \description{
-Print method para LWT
+Print method for LWT
 }

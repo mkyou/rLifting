@@ -2,18 +2,18 @@
 % Please edit documentation in R/diagnostics.R
 \name{validate_compact_support}
 \alias{validate_compact_support}
-\title{Valida Suporte Compacto (FIR Compliance)}
+\title{Validate Compact Support (FIR Compliance)}
 \usage{
 validate_compact_support(scheme, max_width)
 }
 \arguments{
-\item{scheme}{Objeto da classe \code{lifting_scheme}.}
+\item{scheme}{Object of class \code{lifting_scheme}.}
 
-\item{max_width}{Largura maxima esperada (numero de taps).}
+\item{max_width}{Maximum expected width (number of taps).}
 }
 \value{
-Lista com status e numero de taps ativos.
+List with status and number of active taps.
 }
 \description{
-Verifica se a resposta ao impulso e finita (Filtro FIR).
+Verifies if the impulse response is finite (FIR Filter).
 }

@@ -2,20 +2,20 @@
 % Please edit documentation in R/diagnostics.R
 \name{validate_vanishing_moments}
 \alias{validate_vanishing_moments}
-\title{Valida Momentos Nulos (Vanishing Moments)}
+\title{Validate Vanishing Moments}
 \usage{
 validate_vanishing_moments(scheme, degree = 0, tol = 1e-09)
 }
 \arguments{
-\item{scheme}{Objeto da classe \code{lifting_scheme}.}
+\item{scheme}{Object of class \code{lifting_scheme}.}
 
-\item{degree}{Grau do polinomio (0=Constante, 1=Rampa, 2=Parab, 3=Cubic).}
+\item{degree}{Polynomial degree (0=Constant, 1=Ramp, 2=Parabola...).}
 
-\item{tol}{Tolerancia de energia residual (padrao 1e-9).}
+\item{tol}{Residual energy tolerance (default 1e-9).}
 }
 \value{
-Lista com status e energia residual.
+List with status and residual energy.
 }
 \description{
-Verifica se a ondaleta anula polinomios de grau especifico.
+Verifies if the wavelet cancels polynomials of a specific degree.
 }

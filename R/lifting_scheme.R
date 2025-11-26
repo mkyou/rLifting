@@ -1,12 +1,12 @@
-#' Construtor para o Esquema de Lifting (Lifting Scheme)
+#' Lifting Scheme Constructor
 #'
-#' Cria um objeto S3 contendo os passos de predicao e atualizacao.
+#' Creates an S3 object containing prediction and update steps.
 #'
-#' @param wavelet Nome da ondaleta (string). Ex: "haar", "db2".
-#' @param custom_steps Lista de passos (se fornecida, ignora o lookup interno).
-#' @param custom_norm Vetor de normalizacao (opcional).
+#' @param wavelet Wavelet name (string). E.g., "haar", "db2".
+#' @param custom_steps List of steps (if provided, ignores internal lookup).
+#' @param custom_norm Normalization vector (optional).
 #'
-#' @return Um objeto da classe `lifting_scheme`.
+#' @return An object of class `lifting_scheme`.
 #' @export
 lifting_scheme = function(
     wavelet = "haar",
@@ -35,7 +35,7 @@ lifting_scheme = function(
   )
 }
 
-#' Implementa as fatorações baseadas em Daubechies & Sweldens (1998).
+#' Implements factorizations based on Daubechies & Sweldens (1998).
 #' @keywords internal
 .get_wavelet_config = function(name) {
   # Baseline
@@ -151,8 +151,8 @@ lifting_scheme = function(
 }
 
 #' Print method
-#' @param x Objeto lifting_scheme.
-#' @param ... Argumentos adicionais.
+#' @param x lifting_scheme object.
+#' @param ... additional arguments.
 #' @export
 print.lifting_scheme = function(x, ...) {
   cat(sprintf("Lifting Scheme: %s\n", x$wavelet))
@@ -162,23 +162,23 @@ print.lifting_scheme = function(x, ...) {
 }
 
 
-#' Cria um passo de Lifting individual
+#' Create an individual Lifting Step
 #'
-#' Facilita a criacao de passos de predicao (P) ou atualizacao (U)
-#' abstraindo a complexidade de indices.
+#' Helper function to create prediction (P) or update (U) steps,
+#' abstracting the complexity of index management.
 #'
-#' @param type Tipo do passo: "predict" (P) ou "update" (U).
-#' @param coeffs Vetor numerico com os coeficientes do filtro.
-#' @param start_idx (Opcional) Indice inicial manual. Se fornecido,
-#'        ignora o parametro `position`. Use isso para controle fino.
-#' @param position Ajuste automatico de indice (usado apenas se start_idx=NULL):
+#' @param type Step type: "predict" (P) or "update" (U).
+#' @param coeffs Numeric vector containing the filter coefficients.
+#' @param start_idx (Optional) Manual start index. If provided, ignores the
+#'        `position` parameter. Use this for fine-grained control.
+#' @param position Automatic index adjustment (used only if `start_idx` is NULL):
 #'        \itemize{
-#'          \item "center": Centraliza o filtro (padrao).
-#'          \item "left": Filtro causal (olha para o passado).
-#'          \item "right": Filtro anti-causal (olha para o futuro).
+#'          \item "center": Centers the filter (default).
+#'          \item "left": Causal filter (looks into the past).
+#'          \item "right": Anti-causal filter (looks into the future).
 #'        }
 #'
-#' @return Lista formatada para a engine de lifting.
+#' @return A list formatted for the internal lifting engine.
 #' @export
 lift_step = function(
     type = c("predict", "update"),
@@ -211,15 +211,15 @@ lift_step = function(
   list(type = type, coeffs = coeffs, start_idx = start_idx)
 }
 
-#' Cria uma ondaleta customizada
+#' Create a custom wavelet
 #'
-#' Wrapper para criar um objeto lifting_scheme a partir de passos manuais.
+#' Wrapper to create a `lifting_scheme` object from manual steps.
 #'
-#' @param name Nome identificador da ondaleta.
-#' @param steps Lista de passos criados via \code{lift_step}.
-#' @param norm Vetor de normalizacao c(K, 1/K).
+#' @param name Identifier name for the wavelet.
+#' @param steps List of steps created via \code{lift_step}.
+#' @param norm Normalization vector c(K, 1/K).
 #'
-#' @return Objeto da classe `lifting_scheme`.
+#' @return An object of class `lifting_scheme`.
 #' @export
 #' @examples
 #' p1 = lift_step("predict", c(1), position="center")

@@ -7,23 +7,23 @@
 lwt(signal, scheme, levels = 1, extension = "symmetric")
 }
 \arguments{
-\item{signal}{Vetor numerico contendo o sinal.}
+\item{signal}{Numeric vector containing the signal.}
 
-\item{scheme}{Objeto da classe 'lifting_scheme'.}
+\item{scheme}{Object of class \code{lifting_scheme}.}
 
-\item{levels}{Inteiro. Numero de niveis de decomposicao.}
+\item{levels}{Integer. Number of decomposition levels.}
 
-\item{extension}{Modo de tratamento de borda: "symmetric" (padrao),
+\item{extension}{Boundary handling mode: "symmetric" (default),
 "periodic", "zero".}
 }
 \value{
-Objeto S3 da classe 'lwt'. Contem:
-\item{coeffs}{Lista com detalhes (d1..dn) e aproximacao (an).}
-\item{scheme}{O esquema utilizado.}
+S3 object of class \code{lwt}. Contains:
+\item{coeffs}{List with details (d1..dn) and approximation (an).}
+\item{scheme}{The used scheme.}
 }
 \description{
-Executa a transformada wavelet via esquema de lifting.
-Suporta decomposicao multinivel.
+Performs the wavelet transform via lifting scheme.
+Supports multilevel decomposition.
 }
 \examples{
 data = c(1, 2, 3, 4, 5, 6, 7, 8)

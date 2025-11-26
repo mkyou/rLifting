@@ -2,20 +2,21 @@
 % Please edit documentation in R/utils.R
 \name{.pad_signal}
 \alias{.pad_signal}
-\title{Tratamento de Padding/Extensao de Sinais}
+\title{Signal padding/extension handling}
 \usage{
 .pad_signal(x, n_left, n_right, mode = "symmetric")
 }
 \arguments{
-\item{x}{Sinal de entrada.}
+\item{x}{Input signal.}
 
-\item{n_left}{Amostras a esquerda.}
+\item{n_left}{Samples to the left.}
 
-\item{n_right}{Amostras a direita.}
+\item{n_right}{Samples to the right.}
 
-\item{mode}{Modo de extensao: "symmetric", "periodic", "zero".}
+\item{mode}{Extension mode: "symmetric", "periodic", "zero".}
 }
 \description{
-Tratamento de Padding/Extensao de Sinais
+Kept for compatibility with legacy tests and visualization,
+but the C++ core now performs virtual padding on-the-fly.
 }
 \keyword{internal}

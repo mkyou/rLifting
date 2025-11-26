@@ -2,7 +2,7 @@
 % Please edit documentation in R/realtime_denoising.R
 \name{denoise_signal_causal}
 \alias{denoise_signal_causal}
-\title{Denoising Causal em Batch (Simulacao Fiel)}
+\title{Causal Batch Denoising (Faithful Simulation)}
 \usage{
 denoise_signal_causal(
   signal,
@@ -15,24 +15,24 @@ denoise_signal_causal(
 )
 }
 \arguments{
-\item{signal}{Vetor completo do sinal ruidoso.}
+\item{signal}{Complete vector of the noisy signal.}
 
-\item{scheme}{Objeto \code{lifting_scheme}.}
+\item{scheme}{\code{lifting_scheme} object.}
 
-\item{window_size}{Tamanho da janela.}
+\item{window_size}{Window size.}
 
-\item{alpha}{Parametro de decaimento do threshold (Eq 9).}
+\item{alpha}{Threshold decay parameter (Eq 9).}
 
-\item{beta}{Fator de ganho do threshold (Eq 9).}
+\item{beta}{Threshold gain factor (Eq 9).}
 
-\item{method}{Metodo de thresholding.}
+\item{method}{Thresholding method.}
 
-\item{extension}{Tratamento de borda ('symmetric', 'periodic').}
+\item{extension}{Boundary treatment ('symmetric', 'periodic').}
 }
 \value{
-Vetor filtrado (mesmo comprimento).
+Filtered vector (same length).
 }
 \description{
-Processa um sinal completo simulando a chegada sequencial dos dados.
-Garante que o resultado seja identico ao uso em tempo real.
+Processes a complete signal simulating the sequential arrival of data.
+Ensures the result is identical to real-time usage.
 }

@@ -7,14 +7,14 @@
 threshold_soft(x, lambda)
 }
 \arguments{
-\item{x}{Vetor de coeficientes.}
+\item{x}{Vector of coefficients.}
 
-\item{lambda}{Limiar positivo.}
+\item{lambda}{Positive threshold.}
 }
 \value{
-Vetor processado.
+Processed vector.
 }
 \description{
-Zera coeficientes abaixo do limiar e contrai os demais em direcao a zero.
-Reduz o ruido mas introduz bias (vies) na amplitude.
+Sets coefficients below the threshold to zero and shrinks others towards zero.
+Reduces noise but introduces amplitude bias.
 }

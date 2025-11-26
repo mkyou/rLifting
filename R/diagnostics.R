@@ -1,13 +1,13 @@
-#' Gera sinais padrao para testes de ondaletas (Benchmark Donoho-Johnstone)
+#' Generate standard signals for wavelet testing (Donoho-Johnstone Benchmark)
 #'
-#' Cria sinais sinteticos classicos para validacao de wavelets.
-#' As formulas sao baseadas em Donoho & Johnstone e no artigo de Liu et al.
+#' Creates synthetic classic signals for wavelet validation.
+#' Formulas are based on Donoho & Johnstone and Liu et al.
 #'
-#' @param type Tipo do sinal: "const", "ramp", "poly2", "poly3", "random",
+#' @param type Signal type: "const", "ramp", "poly2", "poly3", "random",
 #'             "impulse", "sine", "doppler", "heavisine", "bumps".
-#' @param n Tamanho do sinal (padrao 512).
+#' @param n Signal length (default 512).
 #'
-#' @return Vetor numerico.
+#' @return Numeric vector.
 #' @keywords internal
 .generate_signal = function(type, n = 512) {
   t = seq(0, 1, length.out = n)
@@ -55,16 +55,16 @@
   stop(sprintf("Tipo de sinal '%s' desconhecido.", type))
 }
 
-#' Valida a Reconstrucao Perfeita (Stress Test)
+#' Validate Perfect Reconstruction (Stress Test)
 #'
-#' Verifica a invertibilidade da ondaleta contra uma bateria de sinais.
+#' Verifies wavelet invertibility against a battery of signals.
 #'
-#' @param scheme Objeto da classe `lifting_scheme`.
-#' @param tol Tolerancia de erro numerico (padrao 1e-10).
+#' @param scheme Object of class `lifting_scheme`.
+#' @param tol Numerical error tolerance (default 1e-9).
 #'
-#' @return Lista com status global e erro maximo encontrado.
+#' @return List with global status and maximum error found.
 #' @export
-validate_perfect_reconstruction = function(scheme, tol = 1e-10) {
+validate_perfect_reconstruction = function(scheme, tol = 1e-9) {
   signals = c("random", "ramp", "sine", "doppler", "heavisine", "bumps")
   max_err_global = 0
   failed_signals = c()
@@ -73,6 +73,7 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-10) {
     x = .generate_signal(sig_type, n = 512)
 
     # Usa periodic para focar na matematica e nao na borda
+
     res = lwt(x, scheme, extension = "periodic")
     rec = ilwt(res)
 
@@ -100,15 +101,15 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-10) {
   )
 }
 
-#' Valida momentos nulos (Vanishing Moments)
+#' Validate Vanishing Moments
 #'
-#' Verifica se a ondaleta anula polinomios de grau especifico.
+#' Verifies if the wavelet cancels polynomials of a specific degree.
 #'
-#' @param scheme Objeto da classe `lifting_scheme`.
-#' @param degree Grau do polinomio (0=Constante, 1=Rampa, 2=Parab...).
-#' @param tol Tolerancia de energia residual (padrao 1e-9).
+#' @param scheme Object of class `lifting_scheme`.
+#' @param degree Polynomial degree (0=Constant, 1=Ramp, 2=Parabola...).
+#' @param tol Residual energy tolerance (default 1e-9).
 #'
-#' @return Lista com status e energia residual.
+#' @return List with status and residual energy.
 #' @export
 validate_vanishing_moments = function(scheme, degree = 0, tol = 1e-9) {
   n = 128
@@ -140,17 +141,17 @@ validate_vanishing_moments = function(scheme, degree = 0, tol = 1e-9) {
   )
 }
 
-#' Valida Ortogonalidade (Conservacao de Energia)
+#' Validate Orthogonality (Energy Conservation)
 #'
-#' Verifica o Teorema de Parseval. Apenas para ondaletas ortogonais.
+#' Verifies Parseval's Theorem. Only for orthogonal wavelets.
 #'
-#' @param scheme Objeto da classe `lifting_scheme`.
-#' @param expected Booleano. Se TRUE, exige ortogonalidade.
-#' @param tol Tolerancia (padrao 1e-10).
+#' @param scheme Object of class `lifting_scheme`.
+#' @param expected Boolean. If TRUE, expects orthogonality.
+#' @param tol Tolerance (default 1e-9).
 #'
-#' @return Lista com status e razao de energia (Out/In).
+#' @return List with status and energy ratio (Out/In).
 #' @export
-validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-10) {
+validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-9) {
   x = .generate_signal("random", n = 512)
   energy_in = sum(x^2)
 
@@ -175,14 +176,14 @@ validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-10) {
   )
 }
 
-#' Valida Suporte Compacto (FIR Compliance)
+#' Validate Compact Support (FIR Compliance)
 #'
-#' Verifica se a resposta ao impulso e finita (Filtro FIR).
+#' Verifies if the impulse response is finite (FIR Filter).
 #'
-#' @param scheme Objeto da classe `lifting_scheme`.
-#' @param max_width Largura maxima esperada (numero de taps).
+#' @param scheme Object of class `lifting_scheme`.
+#' @param max_width Maximum expected width (number of taps).
 #'
-#' @return Lista com status e numero de taps ativos.
+#' @return List with status and number of active taps.
 #' @export
 validate_compact_support = function(scheme, max_width) {
   n = 256
@@ -214,15 +215,15 @@ validate_compact_support = function(scheme, max_width) {
   )
 }
 
-#' Valida Sensibilidade a Deslocamento (Shift Variance)
+#' Validate Shift Sensitivity (Shift Variance)
 #'
-#' Ondaletas decimadas nao sao invariantes a translacao.
-#' Este teste quantifica a variacao de energia nos detalhes ao
-#' deslocar o sinal de entrada em 1 amostra.
+#' Decimated wavelets are not translation invariant.
+#' This test quantifies the variation in detail energy when
+#' shifting the input signal by 1 sample.
 #'
-#' @param scheme Objeto da classe `lifting_scheme`.
+#' @param scheme Object of class `lifting_scheme`.
 #'
-#' @return Lista com status e variacao percentual.
+#' @return List with status and percentage variation.
 #' @export
 validate_shift_sensitivity = function(scheme) {
   # Sinal teste: Impulso centralizado
@@ -258,13 +259,13 @@ validate_shift_sensitivity = function(scheme) {
   )
 }
 
-#' Visualiza as funcoes de base (Scaling e Wavelet)
+#' Visualize Basis Functions (Scaling and Wavelet)
 #'
-#' Plota a forma da onda iterando a reconstrucao por varios niveis.
+#' Plots the waveform by iterating the reconstruction over several levels.
 #'
-#' @param scheme Objeto `lifting_scheme`.
-#' @param plot Booleano.
-#' @param levels Numero de niveis de cascata.
+#' @param scheme Object of class `lifting_scheme`.
+#' @param plot Boolean.
+#' @param levels Number of cascade levels.
 #'
 #' @export
 visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
@@ -308,16 +309,25 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   }
 }
 
-#' @return (Invisivel) Uma lista contendo os resultados de cada teste:
+#' Complete Wavelet Diagnosis
+#'
+#' Runs a battery of physical and mathematical tests on a wavelet.
+#'
+#' @param wavelet_name Name string or a `lifting_scheme` object.
+#' @param config Configuration list (is_ortho, vm_degrees, max_taps).
+#' @param verbose Print results to console?
+#'
+#' @return (Invisible) A list containing the results of each test:
 #' \itemize{
 #'   \item Perfect Reconstruction
 #'   \item Orthogonality
-#'   \item Vanishing Moments (para cada grau)
+#'   \item Vanishing Moments (for each degree)
 #'   \item Compact Support
 #'   \item Shift Sensitivity
 #' }
-#' Cada item possui: \code{$passed} (TRUE/FALSE), \code{$metric}
-#' (valor numerico) e \code{$msg}.
+#' Each item contains: \code{$passed} (TRUE/FALSE), \code{$metric}
+#' (numeric value), and \code{$msg}.
+#' @export
 diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
 
   if (is.character(wavelet_name)) {

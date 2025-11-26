@@ -2,7 +2,7 @@
 % Please edit documentation in R/denoising_offline.R
 \name{denoise_signal_offline}
 \alias{denoise_signal_offline}
-\title{Denoising Offline (Nao-Causal / Global)}
+\title{Offline Denoising (Non-Causal / Global)}
 \usage{
 denoise_signal_offline(
   signal,
@@ -14,22 +14,22 @@ denoise_signal_offline(
 )
 }
 \arguments{
-\item{signal}{Sinal completo.}
+\item{signal}{Complete signal.}
 
-\item{scheme}{Objeto lifting_scheme.}
+\item{scheme}{\code{lifting_scheme} object.}
 
-\item{alpha}{Parametro de threshold recursivo.}
+\item{alpha}{Recursive threshold parameter.}
 
-\item{beta}{Fator de escala do threshold.}
+\item{beta}{Threshold scale factor.}
 
-\item{method}{Metodo ('hard', 'soft', 'semisoft').}
+\item{method}{Method ('hard', 'soft', 'semisoft').}
 
-\item{extension}{Modo de extensao ('symmetric', 'periodic', 'zero').}
+\item{extension}{Extension mode ('symmetric', 'periodic', 'zero').}
 }
 \value{
-Sinal filtrado.
+Filtered signal.
 }
 \description{
-Aplica a wavelet em todo o sinal de uma vez. Usa estatisticas globais
-para o calculo do threshold recursivo (Eq. 9).
+Applies the wavelet to the entire signal at once. Uses global statistics
+for recursive threshold calculation (Eq. 9).
 }

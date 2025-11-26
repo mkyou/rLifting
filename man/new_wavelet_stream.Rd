@@ -2,7 +2,7 @@
 % Please edit documentation in R/realtime_denoising.R
 \name{new_wavelet_stream}
 \alias{new_wavelet_stream}
-\title{Cria um Processador de Fluxo (Stream) Wavelet Adaptativo}
+\title{Create an Adaptive Wavelet Stream Processor}
 \usage{
 new_wavelet_stream(
   scheme,
@@ -14,22 +14,25 @@ new_wavelet_stream(
 )
 }
 \arguments{
-\item{scheme}{Objeto \code{lifting_scheme}.}
+\item{scheme}{A \code{lifting_scheme} object.}
 
-\item{window_size}{Tamanho da janela (W). Ex: 256.}
+\item{window_size}{Window size (W). Must be a power of 2 (e.g., 128, 256)
+according to the paper, though the code accepts any integer > 8.}
 
-\item{alpha}{Parametro de decaimento do threshold (Eq 9).}
+\item{alpha}{Threshold decay parameter (Eq 9).}
 
-\item{beta}{Fator de ganho do threshold (Eq 9).}
+\item{beta}{Threshold gain factor (Eq 9).}
 
-\item{method}{Metodo de encolhimento: "hard", "soft", "semisoft".}
+\item{method}{Shrinkage method: "hard", "soft", "semisoft".}
 
-\item{extension}{Tratamento de borda ('symmetric', 'periodic').}
+\item{extension}{Boundary handling ('symmetric', 'periodic').}
 }
 \value{
-Funcao processadora stream(x).
+A closure function \code{processor(new_sample)} that accepts a single
+numeric value and returns the corresponding filtered value. The state (buffer)
+is maintained between calls.
 }
 \description{
-Gera uma funcao stateful que implementa o metodo de Liu et al. completo:
-Janela Movel + Decomposicao Lifting + Threshold Recursivo Adaptativo.
+Generates a stateful function that implements the complete method from Liu et al.:
+Moving Window + Lifting Decomposition + Recursive Adaptive Thresholding.
 }

@@ -12,5 +12,11 @@ Suggests:
     dplyr,
     ggplot2,
     gridExtra,
+    testthat (>= 3.0.0),
     tidyr,
     wavelets
+Config/testthat/edition: 3
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp

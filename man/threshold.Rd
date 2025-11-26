@@ -2,17 +2,17 @@
 % Please edit documentation in R/thresholding.R
 \name{threshold}
 \alias{threshold}
-\title{Wrapper Geral de Thresholding}
+\title{General Thresholding Wrapper}
 \usage{
 threshold(x, lambda, method = "soft")
 }
 \arguments{
-\item{x}{Vetor de entrada.}
+\item{x}{Input vector.}
 
-\item{lambda}{Limiar.}
+\item{lambda}{Threshold.}
 
-\item{method}{"hard", "soft" ou "semisoft".}
+\item{method}{"hard", "soft" or "semisoft".}
 }
 \description{
-Wrapper Geral de Thresholding
+General Thresholding Wrapper
 }

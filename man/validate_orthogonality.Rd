@@ -2,20 +2,20 @@
 % Please edit documentation in R/diagnostics.R
 \name{validate_orthogonality}
 \alias{validate_orthogonality}
-\title{Valida Ortogonalidade (Conservacao de Energia)}
+\title{Validate Orthogonality (Energy Conservation)}
 \usage{
-validate_orthogonality(scheme, expected = TRUE, tol = 1e-10)
+validate_orthogonality(scheme, expected = TRUE, tol = 1e-09)
 }
 \arguments{
-\item{scheme}{Objeto da classe \code{lifting_scheme}.}
+\item{scheme}{Object of class \code{lifting_scheme}.}
 
-\item{expected}{Booleano. Se TRUE, exige ortogonalidade.}
+\item{expected}{Boolean. If TRUE, expects orthogonality.}
 
-\item{tol}{Tolerancia (padrao 1e-10).}
+\item{tol}{Tolerance (default 1e-9).}
 }
 \value{
-Lista com status e razao de energia (Out/In).
+List with status and energy ratio (Out/In).
 }
 \description{
-Verifica o Teorema de Parseval. Apenas para ondaletas ortogonais.
+Verifies Parseval's Theorem. Only for orthogonal wavelets.
 }

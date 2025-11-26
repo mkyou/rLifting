@@ -1,0 +1,161 @@
+---
+title: "Ondaletas customizadas e diagnósticos"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Ondaletas customizadas e diagnósticos}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Uma das maiores vantagens do *Lifting Scheme* sobre a convolução de ondaletas tradicional é a flexibilidade. O `rLifting` permite implementações de novas ondaletas com poucas linhas de código, desde que os coeficientes para os passos *predict* $(P)$ e *update* $(U)$ sejam conhecidos.
+
+Neste guia, abordaremos: - Como implementar novas ondaletas no `rLifting` a partir de coeficientes de Lifting conhecidos. - Como validar a implementação usando a suíte de Diagnósticos.
+
+Precisaremos do pacote `rLifting`.
+
+```{r}
+# library(rLifting)
+devtools::load_all()
+```
+
+## Introdução
+
+Uma ondaleta via Lifting é construída por uma sequência de passos $P$ (*Predict*) e $U$ (*Update*): - Primeiramente, realizamos uma separação dos sinais pares $(e)$ e ímpares $(o)$. Esta separação é conhecida como *Split*, ou *Lazy Wavelet*. - Em sequência, tentamos predizer as amostras ímpares $(o)$ utilizando as amostras pares $(e)$. Obtemos o que chamamos de detalhe $(d)$ a partir dos erros de predição: $d = o - P(e)$. - Finalmente, atualizamos as amostras pares utilizando os detalhes: $s = e + U(d)$.
+
+Os operadores de predição e atualização $P(\cdot)$ e $U(\cdot)$ são informados ao `rLifting` a partir da função `lift_step`.
+
+Para exemplificar o processo, recriemos a ondaleta de Haar. Os coeficientes de *lifting* de Haar para predição e atualização, respectivamente, são $1$ e $0.5$. Deste modo, $P(e) = 1e = e$, e $U(d) = 0.5d$. É comum que um vetor de normalização $\boldsymbol{K}$ também seja informado. Para Haar, fazemos $\boldsymbol{K} = \left(\sqrt{2}, 1/\sqrt{2}\right)$.
+
+```{r}
+# 1. Passo de predição
+# "center" alinha o filtro automaticamente
+p1 = lift_step(type = "predict", coeffs = c(1), position = "center")
+
+# 2. Passo de atualização
+u1 = lift_step(type = "update", coeffs = c(0.5), position = "center")
+
+# 3. Empacotando
+# Normalização padrão da Haar: (sqrt(2), 1/sqrt(2))
+minha_haar = lifting_scheme(
+  wavelet = "HaarManual",
+  custom_steps = list(p1, u1),
+  custom_norm = c(sqrt(2), 1/sqrt(2))
+)
+
+print(minha_haar)
+```
+
+### Diagnósticos
+
+Ondaletas possuem propriedades matemáticas e físicas interessantes. Para conferirmos se a ondaleta que desenhamos via Lifting manteve as propriedades esperadas para uma ondaleta de Haar, podemos utilizar a função `diagnose_wavelet`. Nós esperamos que a ondaleta `HaarManual` tenha reconstrução perfeita (isto é, seja invertível) e um único momento nulo (grau 0, deve anular sinais constantes).
+
+A função de diagnósticos também gera um gráfico que tenta exibir a forma da ondaleta gerada. Neste processo, obtemos os coeficientes de `Lifting` e tentamos reconstruir a ondaleta utilizando o Algoritmo em Cascata (método de construção de ondaletas padrão da literatura). Então, exibimos a forma das funções de escala $(\phi(\cdot))$ e da ondaleta-mãe $(\Psi(\cdot))$; o que também serve como validação de que a construção foi bem sucedida.
+
+```{r}
+diagnose_wavelet(
+  minha_haar, list(
+    is_ortho = TRUE, # Haar é ortogonal
+    vm_degrees = c(0), # Testa apenas grau 0 (Constante)
+    max_taps = 2 # Tamanho esperado do filtro
+    )
+  )
+```
+
+O Lifting Scheme, via de regra, garante a reconstrução perfeita de uma ondaleta, de tal modo que esta validação é feita na `diagnose_wavelet` sobretudo como um teste de sanidade. Por outro lado, o processo não garante as boas propriedades de ortogonalidade, preservação de energia e momentos nulos. Como o `rLifting` nos permite construir as ondaletas passo a passo, é possível, também, construir ondaletas "quebradas", que não preservam as boas propriedades esperadas.
+
+Exemplificaremos isto ao misturar um dos passos de predição da ondaleta CDF 9/7 com o passo de atualização da ondaleta de Haar. Esperamos que a transformada seja invertível (novamente, o Lifting Scheme garante isso); mas que não tenha as propriedades de momentos nulos.
+
+```{r}
+# Predict da CDF 9/7 (Sofisticado)
+alpha = -1.586134342
+p_hibrido = lift_step("predict", c(-alpha, -alpha), position = "center")
+
+# Update da Haar (Simples demais para compensar o Predict acima)
+u_hibrido = lift_step("update", c(0.5), position = "center")
+
+frankenstein = lifting_scheme(
+  wavelet = "FrankenWavelet",
+  custom_steps = list(p_hibrido, u_hibrido)
+)
+
+# Rodando o Diagnóstico
+diagnose_wavelet(frankenstein, list(
+  is_ortho = FALSE,
+  vm_degrees = c(0, 1), # Testando graus 0 e 1
+  max_taps = 5
+))
+```
+
+## Implementação da DB4 (Daubechies 8-taps)
+
+Até agora, ilustramos como implementar ondaletas mais simples via `rLifting`. Ocorre que a ondaleta de Haar já está implementada; na prática, iremos querer utilizar os `lift_steps` para implementar ondaletas que não fazem parte do pacote por padrão.
+
+A DB4 é uma ondaleta um pouco mais complexa que as que já estão disponíveis por padrão no `rLifting`. Utilizaremos a API do pacote e coeficientes extraídos da documentação da biblioteca `liftingScheme` do MATLAB. Esta ondaleta possui cinco passos $(P, U, P, U, P)$. Para implementá-la, precisaremos ter cuidado com os índices (`start_idx`), e com os sinais dos coeficientes.
+
+Em relação ao `start_idx`, utilizamos a convenção: - $z^{1}$ (Futuro) \rightarrow `start_idx = 1` - $z^{-1}$ (Passado) \rightarrow `start_idx = -1`
+
+Em relação aos coeficientes, vale dizer que no `rLifting`, seguimos a *definição semântica* proposta por Sweldens — o detalhe é um erro/resíduo —. No MATLAB, o pacote `liftingScheme` segue a definição algébrica. Isso implica que, para nós, $d = o - P(e)$, enquanto no MATLAB, $d = o + \alpha(e)$, com $\alpha(e) = - P(e)$ (os coeficientes de predição retornados pelo MATLAB são os coeficientes $\alpha$). No fim, para construir a ondaleta no `rLifting` a partir de coeficientes do MATLAB, basta inverter o sinal dos coeficientes relacionados à predição.
+
+```{r}
+# Coeficientes (Sinais ajustados para a engine rLifting: d = o - P(e))
+
+# Passo 1 (Predict): Termo z^1
+p1 = lift_step("predict", c(0.32227589), start_idx = 1)
+
+# Passo 2 (Update): Termos z^0, z^-1
+u1 = lift_step("update", c(-0.30014226, -1.11712361), start_idx = -1)
+
+# Passo 3 (Predict): Termos z^2, z^1
+p2 = lift_step("predict", c(-0.11764809, 0.01880835), start_idx = 1)
+
+# Passo 4 (Update): Termos z^0, z^-1
+u2 = lift_step("update", c(0.63642827, 2.13181671), start_idx = -1)
+
+# Passo 5 (Predict): Termos z^0, z^-1, z^-2
+p3 = lift_step(
+  "predict", c(0.02479124, -0.14003924, 0.46908348), start_idx = -2
+  )
+
+# Normalização (K e 1/K)
+norm_db4 = c(0.73412453, 1.36216672)
+
+db4_custom = lifting_scheme(
+  wavelet = "DB4_Custom",
+  custom_steps = list(p1, u1, p2, u2, p3),
+  custom_norm = norm_db4
+)
+```
+
+Se implementamos corretamente, a `DB4_Custom` deve passar em todos os testes de momentos nulos até o grau cúbico.
+
+```{r}
+diagnose_wavelet(db4_custom, list(
+  is_ortho = TRUE,
+  vm_degrees = c(0, 1, 2, 3),
+  max_taps = 8
+))
+```
+
+É possível ver que a ondaleta passou no teste de momentos nulos. Para este caso em específico, o aviso de ortogonalidade (`Ratio: 1.000000`) não é um problema; embora, teoricamente, esperamos que o `Ratio` seja *exatamente* $1$, erros numéricos são comuns para tantas operações de ponto flutuante.
+
+Compare os gráficos da `DB4_Custom` e da `FrankenWavelet`. A primeira gera uma forma fractal *similar* às ondaletas de Daubechies; a segunda, por outro lado, gera formas irregulares que não parecem convergir para nada útil.
+
+## Conclusão
+
+O pacote `rLifting` permite que o usuário implemente novas ondaletas através do Lifting Scheme. Isso é especialmente útil para ondaletas que surjam em novos artigos, para testar coeficientes de outros *softwares* e para validar matematicamente se a implementação preserva as propriedades físicas do sinal.
+
+Este pacote tem outros tutoriais/guias de uso. Caso seu objetivo seja apenas usar ondaletas de um modo "convencional", o Guia de uso geral pode ser útil para você. Nós também temos um `vignette` que compara diferentes métodos de *thresholding* e suavizadores causais e não-causais para diferentes tipos de ondaletas; com funções costumeiramente utilizadas para comparações estatísticas na literatura. Finalmente, também temos um documento que detalha a performance computacional do método de suavização em tempo real disponibilizado pelo `rLifting`.

@@ -2,20 +2,20 @@
 % Please edit documentation in R/lifting_scheme.R
 \name{lifting_scheme}
 \alias{lifting_scheme}
-\title{Construtor para o Esquema de Lifting (Lifting Scheme)}
+\title{Lifting Scheme Constructor}
 \usage{
 lifting_scheme(wavelet = "haar", custom_steps = NULL, custom_norm = NULL)
 }
 \arguments{
-\item{wavelet}{Nome da ondaleta (string). Ex: "haar", "db2", "cdf97".}
+\item{wavelet}{Wavelet name (string). E.g., "haar", "db2".}
 
-\item{custom_steps}{Lista de passos (opcional).}
+\item{custom_steps}{List of steps (if provided, ignores internal lookup).}
 
-\item{custom_norm}{Vetor de normalizacao (opcional).}
+\item{custom_norm}{Normalization vector (optional).}
 }
 \value{
-Um objeto da classe \code{lifting_scheme}.
+An object of class \code{lifting_scheme}.
 }
 \description{
-Cria um objeto S3 contendo os passos de predicao e atualizacao.
+Creates an S3 object containing prediction and update steps.
 }

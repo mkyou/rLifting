@@ -7,15 +7,16 @@
 threshold_semisoft(x, lambda)
 }
 \arguments{
-\item{x}{Vetor de coeficientes.}
+\item{x}{Vector of coefficients.}
 
-\item{lambda}{Limiar positivo.}
+\item{lambda}{Positive threshold.}
 }
 \value{
-Vetor processado.
+Processed vector.
 }
 \description{
-Implementacao baseada em Liu et al. (2014).
-Combina a estabilidade do Soft com a precisao de amplitude do Hard.
-Funcao: sign(x) * sqrt(x^2 - lambda^2) para |x| > lambda.
+Implementation based on Liu et al. (2014).
+Combines the stability of soft thresholding with the amplitude
+precision of Hard.
+Function: sign(x) * sqrt(x^2 - lambda^2) for |x| > lambda.
 }

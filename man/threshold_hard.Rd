@@ -7,14 +7,14 @@
 threshold_hard(x, lambda)
 }
 \arguments{
-\item{x}{Vetor de coeficientes (detalhes).}
+\item{x}{Vector of coefficients (details).}
 
-\item{lambda}{Limiar (threshold) positivo.}
+\item{lambda}{Positive threshold.}
 }
 \value{
-Vetor processado.
+Processed vector.
 }
 \description{
-Zera coeficientes abaixo do limiar, mantem os demais inalterados.
-Equivalente a "keep or kill".
+Sets coefficients below the threshold to zero, keeps others unchanged.
+Equivalent to "keep or kill".
 }

@@ -1,0 +1,332 @@
+---
+title: "Avaliação de performance estatísticas das ondaletas do rLifting"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Benchmarks Estatísticos: Simulação de Monte Carlo}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Este guia apresenta uma validação estatística estruturada das ondaletas implementadas no pacote `rLifting`.
+O foco central é avaliar a eficácia do suavizador causal (tempo real) em comparação aos métodos clássicos, que processam os dados em lote.
+
+## Metodologia experimental
+
+Para maior robustez estatística, realizamos uma Simulação Monte Carlo com as seguintes características:
+
+1.  Utilizamos as funções `bumps` (transientes abruptos), `doppler` (frequência variável) e `HeaviSine` (saltos e ondas) para testar as ondaletas.
+2.  Geramos $N = 1000$ curvas, com $T = 2048$ pontos discretos observados para cada uma das funções.
+3.  Para cada uma das curvas, adicionamos ruídos aditivos, independentes, e gaussianos $(\sigma = 0.2)$.
+4.  Para cada uma das funções, testamos todas as combinações de ondaletas, métodos de *thresholding*, modos de extensão e modos de operação nativos do pacote.
+
+Avaliamos a eficácia das suavizações com base na qualidade do sinal recuperado (SNR — *Signal to Noise Ratio*) e na precisão global de reconstrução (RMSE — *Root Mean Squared Error*).
+
+## Resultados
+
+```{r}
+library(rLifting)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+
+# Configuração visual padronizada
+theme_set(theme_bw() + theme(legend.position = "top"))
+
+cols_mode = c(
+  "Causal" = "firebrick", 
+  "Offline" = "royalblue", 
+  "Baseline" = "black"
+  )
+
+# Carrega dados pré-computados 
+# ou gera demo rápida se não existirem (CRAN compliance)
+result_file = "sim_results_N1000.rds"
+
+if (file.exists(result_file)) {
+  df_final = readRDS(result_file)
+} else {
+  # Simulação de fallback. Caso o arquivo não exista (CRAN servers).
+  warning(
+    "Arquivo de simulação completa (N=1000) não encontrado. 
+    Rodando simulação demonstrativa (N=10)."
+    )
+  
+  # 1. Configuração Leve
+  N_DEMO = 10 
+  T_PTS = 2048
+  SD_NOISE = 0.2
+  
+  grid_demo = expand.grid(
+    Wavelet = c("haar", "db2", "cdf53", "cdf97", "dd4"),
+    Mode = c("Offline", "Causal"),
+    Method = c("hard", "soft", "semisoft"),
+    Extension = c("symmetric", "periodic"), 
+    stringsAsFactors = FALSE
+  )
+  
+  res_list = list()
+  
+  # 2. Loop Simplificado
+  for (tipo in c("bumps", "doppler", "heavisine")) {
+    sinal_puro = rLifting:::.generate_signal(tipo, n = T_PTS)
+    
+    for (i in 1:N_DEMO) {
+      ruido = rnorm(T_PTS, sd = SD_NOISE)
+      sinal_ruidoso = sinal_puro + ruido
+      
+      # Baseline
+      m_base = calc_metrics(sinal_puro, sinal_ruidoso)
+      res_list[[length(res_list)+1]] = data.frame(
+        Sinal = tipo, Wavelet = "None", 
+        Mode = "Baseline", Method = "None", Extension = "None",
+        RMSE = m_base["RMSE"], SNR = m_base["SNR"], 
+        MBE = m_base["MBE"]
+      )
+      
+      # Grid
+      for (j in 1:nrow(grid_demo)) {
+        p = grid_demo[j, ]
+        sch = lifting_scheme(p$Wavelet)
+        
+        if (p$Mode == "Offline") {
+          proc = denoise_signal_offline(
+            sinal_ruidoso, sch, 
+            method=p$Method, 
+            extension=p$Extension
+            )
+        } else {
+          proc = denoise_signal_causal(
+            sinal_ruidoso, sch, 
+            window_size=256, method=p$Method, 
+            extension=p$Extension
+            )
+        }
+        
+        m = calc_metrics(sinal_puro, proc)
+        
+        res_list[[length(res_list)+1]] = data.frame(
+          Sinal = tipo, Wavelet = p$Wavelet, Mode = p$Mode, 
+          Method = p$Method, Extension = p$Extension,
+          RMSE = m["RMSE"], SNR = m["SNR"], MBE = m["MBE"]
+        )
+      }
+    }
+  }
+  
+  # 3. Agregação (Média)
+  df_full = do.call(rbind, res_list)
+  
+  df_final = df_full |>
+    group_by(Sinal, Wavelet, Mode, Method, Extension) |>
+    summarise(
+      RMSE = mean(RMSE), 
+      SNR = mean(SNR), 
+      MBE = mean(MBE), 
+      .groups = "drop"
+    )
+}
+```
+
+### O custo da causalidade
+
+Ao compararmos a melhor configuração possível para cada abordagem (causal, não-causal e *baseline*), observamos uma hierarquia clara: métodos não-causais (que "veem" o futuro) superam os métodos causais.
+No entanto, o método causal otimizado ainda oferece ganho significativo sobre o sinal ruidoso original (*baseline*), validando sua utilidade prática.
+
+```{r}
+# Agregando pela MELHOR performance em cada modo (Max SNR, Min RMSE)
+overview = df_final |>
+  group_by(Sinal, Mode) |>
+  summarise(
+    SNR = max(SNR),
+    RMSE = min(RMSE),
+    .groups = 'drop'
+  ) |>
+  pivot_longer(
+    cols = c(SNR, RMSE), 
+    names_to = "Metrica", 
+    values_to = "Valor"
+  )
+
+ggplot(overview, aes(x = Sinal, y = Valor, fill = Mode)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  scale_fill_manual(values = cols_mode) +
+  facet_wrap(~Metrica, scales = "free_y", ncol = 1) +
+  labs(
+    title = "Performance máxima: SNR vs RMSE",
+    subtitle = "Comparação da melhor configuração encontrada",
+    y = NULL, 
+    fill = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+O "custo da causalidade" é, portanto, a perda de performance, em SNR (ou RMSE), que temos quando optamos por utilizar uma abordagem causal, em detrimento de uma abordagem não-causal.
+
+### Suavização e reatividade
+
+No modo não-causal, ondaletas suaves e longas (`CDF9/7` ou `DD4`) geralmente superam a ondaleta de Haar.
+Em nossas simulações causais, por outro lado, observamos uma inversão interessante.
+
+```{r}
+# Preparando dados longos (SNR e RMSE)
+causal_perf = df_final |>
+  filter(Mode == "Causal", Method == "semisoft", Extension == "symmetric") |>
+  select(Sinal, Wavelet, SNR, RMSE) |>
+  pivot_longer(c(SNR, RMSE), names_to = "Metrica", values_to = "Valor")
+
+# Preparando baselines longos (para ter linhas diferentes por métrica)
+baselines = df_final |> 
+  filter(Mode == "Baseline") |> 
+  group_by(Sinal) |> 
+  summarise(
+    SNR = mean(SNR),
+    RMSE = mean(RMSE),
+    .groups = 'drop'
+  ) |>
+  pivot_longer(c(SNR, RMSE), names_to = "Metrica", values_to = "Base_Val")
+
+ggplot(causal_perf, aes(x = Wavelet, y = Valor)) +
+  geom_bar(stat = "identity", fill = "royalblue", alpha = 0.8) +
+  geom_hline(
+    data = baselines, 
+    aes(yintercept = Base_Val, linetype = "Baseline"), 
+    color = "firebrick",
+    linewidth = 0.8
+  ) +
+  facet_grid(Metrica ~ Sinal, scales = "free_y") +
+  labs(
+    title = "Performance Causal Detalhada",
+    subtitle = "SNR (quanto maior, melhor) vs RMSE (quanto menor, melhor)",
+    y = NULL
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "top", 
+    legend.title = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+A superiordade da Haar no modo causal deve-se ao seu suporte compacto.
+A ondaleta de Haar utiliza apenas dois coeficientes, por isso, sua resposta a uma mudança no sinal é quase instantânea (atraso de $0.5$ amostra); ondaletas com filtros mais longos, quando tentam calcular o ponto atual, na borda da janela, dependem fortemente da extensão artificial dos dados.
+Na prática, filtros longos "demoram" mais a reagir a picos e mudanças abruptas, e tendem a deslocá-los no tempo (*phase lag*).
+
+### Impacto da extensão de borda
+
+O leitor atento pode ter percebido que, no gráfico acima, consideramos a extensão de dados simétrica.
+A depender da configuração das ondaletas (e, especialmente, do tipo de extensão), o processo de suavização causal pode *degradar* o sinal a ponto de torná-lo pior que o dado ruidoso original.
+
+A tabela abaixo mostra as configurações em que o SNR resultante foi inferior ao *baseline* (ganho negativo).
+Note que isso ocorre predominantemente com a extensão `periodic`.
+Vale dizer que, por conta do seu pequeno número de coeficientes, a ondaleta de Haar não sofre com este fenômeno como as demais.
+
+```{r}
+base_wide = df_final |>
+  filter(Mode == "Baseline") |>
+  group_by(Sinal) |>
+  summarise(
+    Base_SNR = mean(SNR),
+    Base_RMSE = mean(RMSE)
+  )
+
+fracassos = df_final |>
+  filter(Mode == "Causal") |>
+  left_join(base_wide, by = "Sinal") |>
+  mutate(
+    Ganho_dB = SNR - Base_SNR, # Positivo = Melhorou
+    Ganho_RMSE = Base_RMSE - RMSE # Positivo = Melhorou (Erro diminuiu)
+  ) |>
+  filter(Ganho_dB < 0) |> # Filtra onde piorou em SNR
+  select(Sinal, Wavelet, Method, Extension, Ganho_dB, Ganho_RMSE) |>
+  arrange(Ganho_dB)
+
+if(nrow(fracassos) > 0) {
+  knitr::kable(
+    head(fracassos, 10), 
+    digits = 4,
+    caption = "Casos de Degradação (SNR < Baseline)"
+  )
+} else {
+  cat("Nenhum método ficou abaixo do baseline na média.")
+}
+
+```
+
+Este comportamento reforça a recomendação de se utilizar a extensão simétrica como padrão seguro para aplicações em tempo real no `rLifting`.
+
+O gráfico a seguir confirma que, em geral, os resultados com a extensão simétrica tendem a ser mais robustos.
+
+```{r}
+ext_analise = df_final |>
+  filter(Mode == "Causal", Method == "semisoft", Wavelet != "haar") |>
+  group_by(Sinal, Extension) |>
+  summarise(SNR = mean(SNR), .groups='drop')
+
+ggplot(ext_analise, aes(x = Sinal, y = SNR, fill = Extension)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  scale_fill_manual(
+    values = c("royalblue", "firebrick")
+  ) +
+  labs(
+    title = "Simétrica vs Periódica (Modo Causal)",
+    y = "SNR (dB)"
+    )
+```
+
+### Impacto do método de *thresholding*
+
+A escolha da função de corte (*shrinkage*) define como os coeficientes da ondaleta são atenuados.
+O pacote oferece três abordagens, que também foram comparadas na simulação.
+
+-   `hard` mantém a amplitude original dos coeficientes sobreviventes, mas sua descontinuidade gera maior variância (ruído residual).
+-   `soft` garante continuidade e suavidade extrema, mas introduz um viés de amplitude (encolhe o sinal real junto com o ruído), o que pode resultar em SNR piores.
+-   `semisoft` (*Hyperbolic*) busca o equilíbrio: comporta-se como `hard` para grandes amplitudes (preservando picos) e como `soft` para pequenas (estabilidade).
+
+O gráfico abaixo ilustra o SNR médio para cada método com base nas ondaletas `CDF97` e extensão simétrica nos modos causal e não-causal.
+
+```{r plot_thresh, fig.height=4}
+comp_thresh = df_final |>
+  filter(Wavelet == "cdf97", Extension == "symmetric")
+
+ggplot(comp_thresh, aes(x = Method, y = SNR)) +
+  geom_bar(stat = "identity", fill = "royalblue", alpha = 0.8) +
+  facet_grid(Mode ~ Sinal) +
+  labs(
+    title = "Impacto do método de thresholding (CDF 9/7)",
+    subtitle = "Comparação de consistência entre modos não-causal e causal",
+    y = "SNR (dB)",
+    x = NULL
+    ) +
+  theme_bw()
+```
+
+A diferença observada é pequena.
+O melhor método de *thresholding* dependerá da ondaleta utilizada e do sinal que está sendo suavizado.
+
+## Conclusão
+
+Com base neste guia, para um uso experimental/rápido/ingênuo, recomendamos que o leitor adote os seguintes padrões: 1.
+Use suavização *offline*/não-causal, se puder.
+Se o processamento em tempo real não for necessário, este modo oferece performance consideravelmente superior.
+2.
+Cuidado com a latência: em tempo real, ondaletas suaves `CDF97` ajudam a limpar o sinal, mas introduzem atraso.
+Em nossos testes, a ondaleta de Haar performou melhor para todos os sinais considerados.
+3.
+Nossos testes consideraram funções específicas, e, sobretudo, ruídos específicos.
+Se o desvio padrão dos ruídos fosse maior, por exemplo, é possível que teríamos uma maior discrepância entre as performances não-causais, causais e o *baseline*.

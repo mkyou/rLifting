@@ -2,21 +2,21 @@
 % Please edit documentation in R/adaptative_threshold.R
 \name{compute_adaptive_threshold}
 \alias{compute_adaptive_threshold}
-\title{Calcula Limiar Adaptativo (Recursive Thresholding)}
+\title{Calculate Adaptive Threshold (Recursive Thresholding)}
 \usage{
 compute_adaptive_threshold(lwt_obj, alpha = 0.3, beta = 1.2)
 }
 \arguments{
-\item{lwt_obj}{Objeto retornado pela funcao \code{lwt()}.}
+\item{lwt_obj}{Object returned by \code{lwt()} function.}
 
-\item{alpha}{Parametro de ajuste recursivo (Eq. 9). Padrao do artigo: 0.3}
+\item{alpha}{Recursive adjustment parameter (Eq. 9).}
 
-\item{beta}{Fator de escala do limiar inicial (Eq. 9). Padrao do artigo: 1.2}
+\item{beta}{Initial threshold scale factor (Eq. 9).}
 }
 \value{
-Lista de limiares para cada nivel de decomposicao (d1, d2...).
+List of thresholds for each decomposition level (d1, d2...).
 }
 \description{
-Estima o limiar de ruido baseado na estatistica da janela atual,
-seguindo o metodo recursivo de Liu et al. (Eq. 9).
+Estimates the noise threshold based on current window statistics,
+following the recursive method by Liu et al. 2014 (Eq. 9).
 }

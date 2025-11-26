@@ -2,20 +2,20 @@
 % Please edit documentation in R/utils.R
 \name{.apply_filter_lifting}
 \alias{.apply_filter_lifting}
-\title{Aplica filtro lifting com suporte a bordas}
+\title{Applies lifting filter with boundary support (C++ Wrapper)}
 \usage{
 .apply_filter_lifting(x, coeffs, start_idx = 0, extension = "symmetric")
 }
 \arguments{
-\item{x}{Sinal input.}
+\item{x}{Input signal.}
 
-\item{coeffs}{Coeficientes do filtro P ou U.}
+\item{coeffs}{Coefficients of filter P or U.}
 
-\item{start_idx}{Offset relativo.}
+\item{start_idx}{Relative offset.}
 
-\item{extension}{Modo de extensao ("symmetric", "periodic", "zero").}
+\item{extension}{Extension mode.}
 }
 \description{
-Aplica filtro lifting com suporte a bordas
+This function bridges the R logic to the compiled C++ core for speed.
 }
 \keyword{internal}
