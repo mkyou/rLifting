@@ -1,6 +1,15 @@
+.httr-oauth
+.quarto
 .Rproj.user
 .Rhistory
 .RData
-.httr-oauth
+.Ruserdata
 .DS_Store
-.quarto
+src/*.o
+src/*.so
+src/*.dll
+src-i386
+src-x64
+*.tar.gz
+rLifting.Rcheck/
+vignettes/*.html

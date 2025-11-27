@@ -1,3 +1,9 @@
-^rLifting\.Rproj$
+^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^README\.md$
+^inst/scripts/benchmark_throughput\.R$
+^inst/scripts/simulations\.R$
+^inst/scripts/benchmark_batch_simulation\.R$
+^inst/scripts/denoising_performance\.R$
+^.gitignore$

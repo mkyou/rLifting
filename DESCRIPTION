@@ -1,22 +1,40 @@
 Package: rLifting
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: High-Performance Wavelet Lifting Transforms
+Version: 0.9.0
+Date: 2025-11-27
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person(
+    "da Silva", "Moisés", , 
+    "moisesdff8@gmail.com", 
+    role = c("aut", "cre")
+    )
+Description: Performs Wavelet Lifting Transforms focusing on signal denoising. 
+    Implements a hybrid architecture with a zero-allocation C++ core for 
+    high-performance processing. 
+    Features include unified offline (batch) denoising, causal 
+    (real-time) filtering using a ring buffer engine, 
+    and adaptive recursive thresholding.
 License: MIT + file LICENSE
+URL: https://github.com/mkyou/rLifting
+BugReports: https://github.com/mkyou/rLifting/issues
 Encoding: UTF-8
+LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Suggests: 
-    dplyr,
-    ggplot2,
-    gridExtra,
-    testthat (>= 3.0.0),
-    tidyr,
-    wavelets
-Config/testthat/edition: 3
+VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
 Imports: 
     Rcpp
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    dplyr,
+    ggplot2,
+    gridExtra,
+    tidyr,
+    microbenchmark,
+    wavethresh,
+    wavelets
+Config/testthat/edition: 3
