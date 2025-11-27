@@ -7,9 +7,11 @@
 lifting_scheme(wavelet = "haar", custom_steps = NULL, custom_norm = NULL)
 }
 \arguments{
-\item{wavelet}{Wavelet name (string). E.g., "haar", "db2".}
+\item{wavelet}{Wavelet name (string).
+Options: "haar", "db2", "cdf53", "cdf97", "dd4", "lazy".}
 
-\item{custom_steps}{List of steps (if provided, ignores internal lookup).}
+\item{custom_steps}{List of custom steps (optional).
+If provided, ignores internal lookup.}
 
 \item{custom_norm}{Normalization vector (optional).}
 }
@@ -17,5 +19,6 @@ lifting_scheme(wavelet = "haar", custom_steps = NULL, custom_norm = NULL)
 An object of class \code{lifting_scheme}.
 }
 \description{
-Creates an S3 object containing prediction and update steps.
+Creates an S3 object containing the prediction (P) and update (U) steps
+required for the Lifting Transform.
 }

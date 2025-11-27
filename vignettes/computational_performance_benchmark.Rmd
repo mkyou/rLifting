@@ -1,7 +1,8 @@
 ---
-title: "Benchmark de performance: rLifting vs CRAN"
+title: "Performance Benchmark: rLifting vs CRAN"
 output: 
   rmarkdown::html_vignette:
+    css: style.css
     toc: true
     toc_depth: 2
 vignette: >
@@ -21,22 +22,38 @@ knitr::opts_chunk$set(
 )
 ```
 
-O `rLifting` foi desenhado com um objetivo primário: velocidade em tempo real.
-Enquanto a maioria dos pacotes de ondaletas em R foca em análise estatística *offline* (pós-processamento), este pacote oferece soluções para processamentos *offline* e de fluxo (streaming).
+`rLifting` was designed with a primary goal: **High-Performance Signal Processing**.
+While most R wavelet packages focus on offline statistical analysis (post-processing), this package offers robust solutions for both offline analysis and high-throughput streaming.
 
-Neste documento, comparamos a performance do `rLifting` com o pacote `wavethresh`, bem estabelecido no ecossistema R.
+## The Landscape of Lifting in R
 
-## Configuração do Teste
+Before benchmarking, it is important to address the "elephant in the room".
+There are other modern packages for Lifting in R, notably `adlift` and `nlt`.
+Why aren't we comparing against them?
 
-Simularemos um cenário de carga média, para garantir resultados estatísticamente válidos:
+-   **Different Objectives:**
 
--   N = 100 sinais independentes.
+    -   `adlift` focuses on **irregular grids** and performs complex adaptive prediction steps per point.
+        It is statistically powerful for difficult data but computationally heavy.
 
--   T = 1024 amostras por sinal (potência de 2 para justiça com DWT clássica).
+    -   `nlt` implements the **Non-Decimated** transform (redundant), which improves denoising but consumes significantly more memory and CPU.
 
--   Ondaleta: Haar (simples e suportada por todos).
+    -   `rLifting` targets **regular grids** (standard sensors/audio) and prioritizes **execution speed** via a C++ Ring Buffer.
 
--   Níveis: 3 níveis de decomposição.
+Comparing `rLifting` to `adlift` would be unfair to `adlift`, as it solves a much harder mathematical problem.
+Therefore, we benchmark against `wavethresh`, which is the standard for classic DWT/Lifting on regular grids.
+
+## Benchmark Setup
+
+We simulate a small-load scenario:
+
+-   **N = 50** independent signals.
+
+-   **T = 512** samples per signal.
+
+-   **Wavelet:** Haar.
+
+-   **Levels:** 3 decomposition levels.
 
 ```{r}
 library(rLifting)
@@ -45,41 +62,37 @@ library(ggplot2)
 library(dplyr)
 
 theme_set(theme_bw())
-# Tenta carregar concorrentes (se não tiver, o código adapta)
+# Try to load competitors
 has_wavethresh = requireNamespace("wavethresh", quietly = TRUE)
 
-# DADOS DE TESTE
+# TEST DATA
 set.seed(42)
-N_SIGNALS = 100
-T_LEN = 1024
-# Matriz de sinais (colunas = sinais)
+N_SIGNALS = 50
+T_LEN = 512
 signals = matrix(rnorm(N_SIGNALS * T_LEN), nrow = T_LEN, ncol = N_SIGNALS)
 
 # Setup rLifting
 scheme_rl = lifting_scheme("haar")
 ```
 
-## Cenário 1 — Suavização *offline* (não-causal, em lote)
+## Scenario 1: Offline Denoising (Batch)
 
-Neste cenário, temos todos os dados em mãos.
-O objetivo é ler o sinal, decompor, aplicar *threshold* (*soft*) e reconstruir.
+In this scenario, all data is available.
+The goal is to read the signal, decompose, threshold (soft), and reconstruct.
 
 ```{r}
 if (has_wavethresh) {
-  # Wrapper para Wavethresh (WD -> Threshold -> WR)
+  # Wrapper for Wavethresh (WD -> Threshold -> WR)
   run_wavethresh_batch = function(mat) {
     apply(mat, 2, function(x) {
-      # Decomposicao
       w = wavethresh::wd(
         x, family = "DaubExPhase", 
         filter.number = 1, bc = "symmetric"
         )
-      # Threshold (Soft, Universal)
       w_t = wavethresh::threshold(
         w, policy = "universal", type = "soft", 
         dev = mad, verbose = FALSE
         )
-      # Reconstrucao
       wavethresh::wr(w_t)
     })
   }
@@ -87,8 +100,8 @@ if (has_wavethresh) {
 
 # Wrapper rLifting
 run_rlifting_batch = function(mat) {
-  # Nível 3, Haar, Soft, Symmetric (equivalente ao acima)
-  # O loop apply é feito no R, mas o core é C++
+  # Level 3, Haar, Soft, Symmetric
+  # Apply loop is in R, but the core is C++
   apply(mat, 2, function(x) {
     denoise_signal_offline(
       x, scheme_rl, levels = 3, 
@@ -97,50 +110,53 @@ run_rlifting_batch = function(mat) {
   })
 }
 
-# Executando Benchmark (apenas se wavethresh existir)
+# Running Benchmark (Only if wavethresh exists)
 if (has_wavethresh) {
   res_offline = microbenchmark(
     wavethresh = run_wavethresh_batch(signals),
-    rLifting   = run_rlifting_batch(signals),
+    rLifting = run_rlifting_batch(signals),
     times = 50
   )
   
   print(res_offline)
   autoplot(res_offline) + 
-    labs(title = "Denoising Offline (500 sinais x 1024 pontos)")
+    labs(title = "Offline Denoising (50 signals x 512 points)")
 } else {
-  cat("Pacote 'wavethresh' não instalado. Pulando comparação offline.")
+  cat("Package 'wavethresh' not installed. Skipping offline comparison.")
 }
 ```
 
-O `rLifting` utiliza um motor C++ que realiza a decomposição, limiarização e reconstrução em uma única passagem de memória, evitando a criação de objetos complexos S3/S4 intermediários que pacotes tradicionais utilizam.
-Em adição, a arquitetura do Lifting Scheme é superior, em termos de performance, à convolução de ondaletas padrão.
-As duas coisas combinadas geralmente resultam em um desempenho superior ou, no mínimo, altamente competitivo, mesmo no modo *offline*.
+`rLifting` uses a C++ engine that performs decomposition, thresholding, and reconstruction in a single memory pass ("Zero-Allocation"), avoiding the creation of complex intermediate S3/S4 objects.
+This generally results in highly competitive or superior performance, even in offline mode.
 
-## Cenário 2 — Suavização *online* (em tempo real)
+## Scenario 2: Online Denoising (Real-Time)
 
-Este é um dos principais diferenciais do pacote.
-Imagine que recebamos um novo ponto de dado a cada milissegundo.
+This is the package's key differentiator.
+Imagine receiving **one new data point** every millisecond.
 
--   Abordagem tradicional (*naive sliding window*): como os pacotes clássicos não têm "estado" (memória), você precisa pegar os últimos 1024 pontos, rodar a DWT inteira, filtrar, fazer a IDWT inteira e pegar o último ponto. Isso é $O(N)$ por passo.
--   Abordagem rLifting (*causal ring buffer*): o pacote mantém o estado interno em C++. Ao receber um ponto, ele atualiza apenas o necessário via Lifting Scheme. Isso é $O(1)$ (amortizado/leve).
+-   **Traditional Approach (Naive Sliding Window):** Since classic packages are stateless (no memory), you must take the last 1024 points, run the full DWT, filter, run IDWT, and pick the last point.
+    This is $O(N)$ per step.
 
-Vamos simular o processamento de apenas 50 passos de um fluxo para comparar a diferença.
+-   **rLifting Approach (Causal Ring Buffer):** The package maintains internal state in C++.
+    Upon receiving a point, it updates only the necessary coefficients via the Lifting Scheme.
+    This effectively results in **constant time complexity per sample relative to stream length**, maintaining low latency.
+
+Let's simulate processing just 30 steps of a stream.
 
 ```{r}
-# Pegamos um sinal de exemplo
+# Sample signal
 stream_data = signals[,1]
-new_points = rnorm(50) # 50 novos pontos chegando
+new_points = rnorm(30) # 60 new incoming points
 
-# Abordagem tradicional (janela deslizante com wavethresh)
+# Traditional Approach
 run_naive_sliding = function() {
-  buffer = stream_data # Buffer inicial
-  out = numeric(50)
-  for(i in 1:50) {
-    # Adiciona ponto, remove antigo (Janela Fixa)
+  buffer = stream_data # Initial buffer
+  out = numeric(30)
+  for(i in 1:30) {
+    # Add point, remove old (Fixed Window)
     buffer = c(buffer[-1], new_points[i]) 
     
-    # Reprocessa TUDO
+    # Reprocess EVERYTHING
     w = wavethresh::wd(
       buffer, family="DaubExPhase", 
       filter.number=1, bc="symmetric"
@@ -151,26 +167,24 @@ run_naive_sliding = function() {
       )
     rec = wavethresh::wr(w_t)
     
-    out[i] = tail(rec, 1) # Pega so o ultimo
+    out[i] = tail(rec, 1) # Pick only the last one
   }
   return(out)
 }
 
-# Abordagem rLifting (stateful engine)
+# rLifting Approach (Stateful)
 run_rlifting_stream = function() {
-  # Cria o motor persistente (C++ XPtr)
-  # Janela 1024, nivel 3
+  # Create persistent engine (C++ XPtr)
   proc = new_wavelet_stream(
-    scheme_rl, window_size = 1024, levels = 3, 
+    scheme_rl, window_size = 512, levels = 3, 
     method = "soft"
   )
   
-  # Aquece com o historico (simulacao rapida)
-  # Na pratica, o estado ja estaria la. 
-  # Vamos medir apenas o processamento dos novos pontos.
+  # Warm up with history (fast simulation)
+  # State is preserved in C++
   invisible(sapply(stream_data, proc)) 
   
-  # Processa os 50 novos
+  # Process 50 new points
   sapply(new_points, proc)
 }
 
@@ -183,26 +197,26 @@ if (has_wavethresh) {
   
   print(res_online)
   
-  # Visualização da escala Logarítmica (pois a diferença é grande)
+  # Log Scale Visualization (Difference is massive)
   autoplot(res_online) + 
     scale_y_log10() +
     labs(
-      title = "Processamento online (50 passos)", 
-      subtitle = "Escala logarítmica! rLifting é mais rápido."
+      title = "Online Processing (30 steps)", 
+      subtitle = "Log Scale! rLifting is orders of magnitude faster."
     )
 }
 ```
 
-## Cenário 3 — Latência zero
+## Scenario 3: Throughput (Zero Latency)
 
-Para aplicações de alta frequência (HFT) ou sensores IoT, o que importa é quanto tempo leva para processar uma amostra.
-Aqui usamos a função `new_wavelet_stream` isolada, medindo o tempo de injeção de uma única amostra no motor C++.
+For High-Frequency Trading (HFT) or IoT sensors, latency per sample matters.
+Here we measure the time to inject a *single sample* into the C++ engine.
 
 ```{r}
-# Cria motor leve
+# Create light engine
 fast_proc = new_wavelet_stream(scheme_rl, window_size = 256, levels = 3)
 
-# Mede o tempo de processar UM ponto individualmente
+# Measure single sample injection time
 res_latency = microbenchmark(
   Single_Sample_Push = fast_proc(0.5),
   times = 1000
@@ -210,21 +224,24 @@ res_latency = microbenchmark(
 
 print(res_latency)
 
-avg_time_ns = summary(res_latency)$mean * 1000 # convertendo para nanosegundos (aprox)
+avg_time_ns = summary(res_latency)$mean * 1000 # convert to nanoseconds
 cat(
   sprintf(
-    "\nTempo médio por amostra: %.2f microsegundos\n", avg_time_ns / 1000
+    "\nAverage time per sample: %.2f microseconds\n", avg_time_ns / 1000
     )
   )
 cat(
   sprintf(
-    "Capacidade teórica: %.0f eventos/segundo\n", 1e9 / avg_time_ns * 1000
+    "Theoretical Capacity: %.0f events/second\n", 1e9 / avg_time_ns * 1000
     )
   )
 ```
 
-## Conclusão
+## Conclusion
 
-1.  *Offline*: o `rLifting` é frequentemente mais rápido que pacotes tradicionais.
-2.  *Online*: o `rLifting` viabiliza análises que são computacionalmente inviáveis com pacotes tradicionais. A abordagem de *ring buffer* elimina o gargalo $O(N)$, permitindo suavização em tempo quase real.
-3.  Latência: com latências na casa dos microsegundos, o pacote é adequado para sistemas intensos.
+1.  **Offline:** `rLifting` is a modern, high-performance alternative to traditional packages for regular grids.
+
+2.  **Online:** `rLifting` enables analyses that are computationally infeasible with stateless packages.
+    The Ring Buffer architecture removes the $O(N)$ bottleneck.
+
+3.  **Latency:** With microsecond-level latency, the package is suitable for high-throughput systems.

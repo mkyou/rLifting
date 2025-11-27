@@ -2,16 +2,18 @@
 % Please edit documentation in R/realtime_denoising.R
 \name{denoise_signal_causal}
 \alias{denoise_signal_causal}
-\title{Causal Batch Denoising (Faithful Simulation)}
+\title{Causal Batch Denoising (Turbo Simulation)}
 \usage{
 denoise_signal_causal(
   signal,
   scheme,
+  levels = 1,
   window_size = 256,
   alpha = 0.3,
   beta = 1.2,
   method = "semisoft",
-  extension = "symmetric"
+  extension = "symmetric",
+  update_freq = 1
 )
 }
 \arguments{
@@ -19,20 +21,25 @@ denoise_signal_causal(
 
 \item{scheme}{\code{lifting_scheme} object.}
 
+\item{levels}{Decomposition levels.}
+
 \item{window_size}{Window size.}
 
 \item{alpha}{Threshold decay parameter (Eq 9).}
 
 \item{beta}{Threshold gain factor (Eq 9).}
 
-\item{method}{Thresholding method.}
+\item{method}{Thresholding method ("soft", "hard", "semisoft").}
 
 \item{extension}{Boundary treatment ('symmetric', 'periodic').}
+
+\item{update_freq}{Frequency of threshold updates.}
 }
 \value{
-Filtered vector (same length).
+Filtered vector (same length as input).
 }
 \description{
 Processes a complete signal simulating the sequential arrival of data.
-Ensures the result is identical to real-time usage.
+Uses the specialized C++ class \code{WaveletEngine} to perform causal filtering
+efficiently on a historical dataset.
 }

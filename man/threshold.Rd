@@ -9,9 +9,9 @@ threshold(x, lambda, method = "soft")
 \arguments{
 \item{x}{Input vector.}
 
-\item{lambda}{Threshold.}
+\item{lambda}{Threshold value.}
 
-\item{method}{"hard", "soft" or "semisoft".}
+\item{method}{Method: "hard", "soft" or "semisoft".}
 }
 \description{
 General Thresholding Wrapper

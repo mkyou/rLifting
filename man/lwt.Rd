@@ -7,23 +7,23 @@
 lwt(signal, scheme, levels = 1, extension = "symmetric")
 }
 \arguments{
-\item{signal}{Numeric vector containing the signal.}
+\item{signal}{Numeric vector containing the input signal.}
 
-\item{scheme}{Object of class \code{lifting_scheme}.}
+\item{scheme}{A \code{lifting_scheme} object.}
 
 \item{levels}{Integer. Number of decomposition levels.}
 
-\item{extension}{Boundary handling mode: "symmetric" (default),
-"periodic", "zero".}
+\item{extension}{Boundary extension mode: "symmetric" (default),
+"periodic", or "zero".}
 }
 \value{
-S3 object of class \code{lwt}. Contains:
-\item{coeffs}{List with details (d1..dn) and approximation (an).}
-\item{scheme}{The used scheme.}
+An object of class 'lwt' containing:
+\item{coeffs}{List of details (d1..dn) and approximation (an).}
+\item{scheme}{The scheme used.}
 }
 \description{
-Performs the wavelet transform via lifting scheme.
-Supports multilevel decomposition.
+Performs the Forward Wavelet Transform using the Lifting Scheme.
+Optimized with C++ backend.
 }
 \examples{
 data = c(1, 2, 3, 4, 5, 6, 7, 8)

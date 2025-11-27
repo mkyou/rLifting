@@ -5,15 +5,16 @@
 #include <vector>
 #include <string>
 
-// Estrutura compartilhada para os passos do Lifting
+// Shared structure for Lifting steps
 struct LiftingStep {
         std::string type;
         std::vector<double> coeffs;
         int start_idx;
 };
 
-// Funções auxiliares inline
-// Centralizamos a logica de borda aqui para ser usada por todos os engines C++
+// Inline Helper Functions
+// Centralized boundary logic to be shared between Online, Offline,
+// and Utils engines.
 inline double get_val_safe(
                 const std::vector<double>& x,
                 int i, int n, int mode
@@ -30,7 +31,7 @@ inline double get_val_safe(
                 return x[idx];
         }
 
-        // Symmetric (Reflexao)
+        // Symmetric (Reflection)
         while (i < 0 || i >= n) {
                 if (i < 0) i = -1 - i;
                 else i = 2 * n - 1 - i;
@@ -40,7 +41,7 @@ inline double get_val_safe(
         return x[i];
 }
 
-// Assinaturas existentes
+// Function Signatures
 
 Rcpp::NumericVector apply_filter_cpp(
                 Rcpp::NumericVector x, Rcpp::NumericVector coeffs,

@@ -2,12 +2,12 @@
 % Please edit documentation in R/adaptative_threshold.R
 \name{compute_adaptive_threshold}
 \alias{compute_adaptive_threshold}
-\title{Calculate Adaptive Threshold (Recursive Thresholding)}
+\title{Calculate Adaptive Threshold (Recursive)}
 \usage{
 compute_adaptive_threshold(lwt_obj, alpha = 0.3, beta = 1.2)
 }
 \arguments{
-\item{lwt_obj}{Object returned by \code{lwt()} function.}
+\item{lwt_obj}{Object returned by \code{lwt()}.}
 
 \item{alpha}{Recursive adjustment parameter (Eq. 9).}
 
@@ -17,6 +17,7 @@ compute_adaptive_threshold(lwt_obj, alpha = 0.3, beta = 1.2)
 List of thresholds for each decomposition level (d1, d2...).
 }
 \description{
-Estimates the noise threshold based on current window statistics,
-following the recursive method by Liu et al. 2014 (Eq. 9).
+Estimates the optimal noise threshold based on current window statistics.
+Implements the recursive formula from Liu et al. (2014).
+Accelerated with C++.
 }

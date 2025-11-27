@@ -1,17 +1,17 @@
 #' Lifting Wavelet Transform (Forward)
 #'
-#' Executa a transformada wavelet via esquema de lifting.
-#' Otimizado com backend C++.
+#' Performs the Forward Wavelet Transform using the Lifting Scheme.
+#' Optimized with C++ backend.
 #'
-#' @param signal Vetor numerico contendo o sinal.
-#' @param scheme Objeto da classe 'lifting_scheme'.
-#' @param levels Inteiro. Numero de niveis de decomposicao.
-#' @param extension Modo de tratamento de borda: "symmetric" (padrao),
-#' "periodic", "zero".
+#' @param signal Numeric vector containing the input signal.
+#' @param scheme A `lifting_scheme` object.
+#' @param levels Integer. Number of decomposition levels.
+#' @param extension Boundary extension mode: "symmetric" (default),
+#' "periodic", or "zero".
 #'
-#' @return Objeto S3 da classe 'lwt'. Contem:
-#' \item{coeffs}{Lista com detalhes (d1..dn) e aproximacao (an).}
-#' \item{scheme}{O esquema utilizado.}
+#' @return An object of class 'lwt' containing:
+#' \item{coeffs}{List of details (d1..dn) and approximation (an).}
+#' \item{scheme}{The scheme used.}
 #' @export
 #'
 #' @examples
@@ -21,34 +21,28 @@
 #' print(res)
 lwt = function(signal, scheme, levels = 1, extension = "symmetric") {
 
-  # Validacoes Basicas
   if (!inherits(scheme, "lifting_scheme")) {
-    stop("Argumento 'scheme' invalido.")
+    stop("Invalid 'scheme' argument.")
   }
   n = length(signal)
   if (n < 2^levels) {
-    stop("Sinal muito curto para o numero de niveis solicitado.")
+    stop("Signal is too short for the requested number of levels.")
   }
 
-  # Warning de sinal curto (mantido para consistencia)
   final_len = n / (2^levels)
   if (final_len < 4) {
     warning(sprintf(
-      "Sinal residual no nivel %d tem apenas %.1f amostras.",
+      "Residual signal at level %d has only %.1f samples.",
       levels, final_len
     ))
   }
 
-  # Mapeia extensao para inteiro (C++)
-  # 1=symmetric, 2=periodic, 3=zero
   ext_int = switch(extension,
                    "symmetric" = 1L,
                    "periodic"  = 2L,
                    "zero"      = 3L,
                    1L)
 
-  # --- CHAMADA AO CORE C++ ---
-  # Passamos a lista de steps e os parametros brutos.
   coeffs_list = lwt_cpp(
     as.numeric(signal),
     scheme$steps,
@@ -69,20 +63,16 @@ lwt = function(signal, scheme, levels = 1, extension = "symmetric") {
   )
 }
 
-#' Print method para LWT
-#' @param x Objeto da classe lwt.
-#' @param ... Argumentos adicionais (nao utilizados).
+#' Print method for LWT
+#' @param x An object of class lwt.
+#' @param ... Additional arguments.
 #' @export
 print.lwt = function(x, ...) {
   cat("--- LWT Decomposition (C++ Accelerated) ---\n")
   cat(sprintf("Levels: %d\n", x$levels))
   cat(sprintf("Wavelet: %s\n", x$scheme$wavelet))
   cat("Coefficients:\n")
-  # A ordem da lista que vem do C++
-  # pode nao estar ordenada bonitinha (Hash map),
-  # entao ordenamos para printar (d1, d2... an)
   nms = names(x$coeffs)
-  # Logica simples de ordenacao visual
   for (name in sort(nms)) {
     cat(sprintf("  %s: length %d\n", name, length(x$coeffs[[name]])))
   }

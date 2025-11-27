@@ -1,14 +1,14 @@
-#' rLifting: Real-Time Signal Denoising via Lifting Scheme
+#' rLifting: High-Performance Wavelet Lifting Transforms
 #'
-#' A package for wavelet transforms using the Lifting Scheme, focused on
-#' real-time (causal) applications, adaptive thresholding, and custom
-#' wavelet construction.
+#' A unified framework for Wavelet Transforms using the Lifting Scheme.
+#' It provides robust tools for offline signal analysis and functional data
+#' analysis (FDA), while also enabling high-performance causal processing
+#' for real-time applications via a specialized C++ core.
 #'
-#' @docType package
 #' @name rLifting
-#' @importFrom stats median rnorm cor sd
+#' @importFrom stats median rnorm cor sd ts.plot
 #' @importFrom utils setTxtProgressBar tail txtProgressBar head
-#' @importFrom graphics par ts.plot grid lines legend title
+#' @importFrom graphics par grid lines legend title
 #' @importFrom Rcpp sourceCpp
 #' @useDynLib rLifting, .registration = TRUE
-NULL
+"_PACKAGE"

@@ -2,22 +2,25 @@
 % Please edit documentation in R/realtime_denoising.R
 \name{new_wavelet_stream}
 \alias{new_wavelet_stream}
-\title{Create an Adaptive Wavelet Stream Processor}
+\title{Create an Adaptive Wavelet Stream Processor (C++ Core)}
 \usage{
 new_wavelet_stream(
   scheme,
   window_size = 256,
+  levels = 1,
   alpha = 0.3,
   beta = 1.2,
   method = "semisoft",
-  extension = "symmetric"
+  extension = "symmetric",
+  update_freq = 1
 )
 }
 \arguments{
 \item{scheme}{A \code{lifting_scheme} object.}
 
-\item{window_size}{Window size (W). Must be a power of 2 (e.g., 128, 256)
-according to the paper, though the code accepts any integer > 8.}
+\item{window_size}{Sliding window size (W). Must be > 8.}
+
+\item{levels}{Decomposition levels (default 1).}
 
 \item{alpha}{Threshold decay parameter (Eq 9).}
 
@@ -25,14 +28,18 @@ according to the paper, though the code accepts any integer > 8.}
 
 \item{method}{Shrinkage method: "hard", "soft", "semisoft".}
 
-\item{extension}{Boundary handling ('symmetric', 'periodic').}
+\item{extension}{Boundary handling ('symmetric', 'periodic', 'zero').}
+
+\item{update_freq}{How often to recompute threshold statistics (default 1).}
 }
 \value{
 A closure function \code{processor(new_sample)} that accepts a single
-numeric value and returns the corresponding filtered value. The state (buffer)
-is maintained between calls.
+numeric value and returns the filtered value immediately.
 }
 \description{
-Generates a stateful function that implements the complete method from Liu et al.:
-Moving Window + Lifting Decomposition + Recursive Adaptive Thresholding.
+Generates a stateful function backed by a high-performance C++
+Ring Buffer engine.
+It implements Sliding Window + Lifting Decomposition +
+Adaptive Thresholding
+in $O(1)$ amortized time per sample.
 }

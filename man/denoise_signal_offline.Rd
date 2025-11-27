@@ -2,34 +2,38 @@
 % Please edit documentation in R/denoising_offline.R
 \name{denoise_signal_offline}
 \alias{denoise_signal_offline}
-\title{Offline Denoising (Non-Causal / Global)}
+\title{Offline Denoising (Global Batch)}
 \usage{
 denoise_signal_offline(
   signal,
   scheme,
   alpha = 0.3,
   beta = 1.2,
+  levels = 3,
   method = "semisoft",
   extension = "symmetric"
 )
 }
 \arguments{
-\item{signal}{Complete signal.}
+\item{signal}{Numeric vector containing the complete signal.}
 
-\item{scheme}{\code{lifting_scheme} object.}
+\item{scheme}{A \code{lifting_scheme} object.}
 
 \item{alpha}{Recursive threshold parameter.}
 
 \item{beta}{Threshold scale factor.}
 
-\item{method}{Method ('hard', 'soft', 'semisoft').}
+\item{levels}{Number of decomposition levels.}
+
+\item{method}{Thresholding method ('hard', 'soft', 'semisoft').}
 
 \item{extension}{Extension mode ('symmetric', 'periodic', 'zero').}
 }
 \value{
-Filtered signal.
+Filtered numeric vector (same length as input).
 }
 \description{
-Applies the wavelet to the entire signal at once. Uses global statistics
-for recursive threshold calculation (Eq. 9).
+Performs denoising on the entire signal at once using a non-causal approach.
+Uses global statistics for recursive threshold calculation (Eq. 9).
+This function is fully optimized in C++ (Zero-Allocation).
 }

@@ -9,12 +9,13 @@ threshold_soft(x, lambda)
 \arguments{
 \item{x}{Vector of coefficients.}
 
-\item{lambda}{Positive threshold.}
+\item{lambda}{Positive threshold value.}
 }
 \value{
 Processed vector.
 }
 \description{
-Sets coefficients below the threshold to zero and shrinks others towards zero.
-Reduces noise but introduces amplitude bias.
+Sets coefficients below the threshold to zero and shrinks others
+towards zero.
+Reduces noise variance but introduces amplitude bias.
 }

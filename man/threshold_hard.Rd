@@ -9,12 +9,12 @@ threshold_hard(x, lambda)
 \arguments{
 \item{x}{Vector of coefficients (details).}
 
-\item{lambda}{Positive threshold.}
+\item{lambda}{Positive threshold value.}
 }
 \value{
 Processed vector.
 }
 \description{
-Sets coefficients below the threshold to zero, keeps others unchanged.
-Equivalent to "keep or kill".
+Sets coefficients below the threshold to zero, keeping others unchanged.
+Known as the "keep or kill" policy.
 }

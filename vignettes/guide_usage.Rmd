@@ -1,11 +1,12 @@
 ---
-title: "Guia de uso geral: rLifting"
+title: "General Usage Guide: rLifting"
 output: 
   rmarkdown::html_vignette:
+    css: style.css
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{Guia de uso geral}
+  %\VignetteIndexEntry{General Usage Guide}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -24,13 +25,23 @@ knitr::opts_chunk$set(
 )
 ```
 
-Este guia introduz as funcionalidades principais do pacote `rLifting`.
-Focaremos na aplicação prática de ondaletas para remoção de ruído (*denoising*), comparando a abordagem clássica (*offline*/não-causal/limiares globais) com a abordagem de tempo real (causal/limiares adaptativos).
+This guide introduces the core functionalities of the `rLifting` package.
+It is designed to bridge the gap between traditional signal analysis and modern real-time requirements.
 
-## Configurações iniciais
+We will focus on **Signal Denoising**, comparing two fundamental approaches available in the package:
 
-Para utilizar o `rLifting`, certifique-se de que o pacote está instalado e carregado.
-Para este tutorial, também precisaremos das bibliotecas `ggplot2` e `tidyr`.
+1.  **Offline Denoising (Non-Causal / Batch):** In this mode, the algorithm has access to the entire signal (past and future) at once.
+    By "seeing the future", it can calculate global statistics and smooth the signal more effectively without lag.
+    This is ideal for historical data analysis.
+
+2.  **Online Denoising (Causal / Adaptive):** In this mode, data points arrive sequentially (e.g., from a sensor).
+    The algorithm cannot "see" the future and must rely on a sliding window of past data.
+    This introduces challenges like phase lag but enables real-time decision-making.
+
+## Setup
+
+Ensure `rLifting` is installed and loaded.
+We will also use `ggplot2` and `tidyr` for visualization.
 
 ```{r}
 library(rLifting)
@@ -38,140 +49,139 @@ library(ggplot2)
 library(tidyr)
 ```
 
-## Exemplo prático: Haar e a função Doppler
+## Practical Example: Haar and the Doppler Signal
 
-Começaremos com a ondaleta de Haar.
-Apesar de sua simplicidade, e de não ser a mais recomendada para sinais suaves, ela será útil para entender o funcionamento do algoritmo.
-A utilizaremos para tratar a função Doppler com $\left(T = 2048\right)$ pontos observados contaminados por ruído.
+We begin with the Haar wavelet.
+Although simple, it is excellent for illustrating the mechanics of the algorithm.
+We will treat a Doppler function with $T=2048$ points contaminated by noise.
 
 ```{r}
-# Gerando dados de teste
+# Generate synthetic test data
 set.seed(2025)
-n_amostras = 2048
-sinal_puro = rLifting:::.generate_signal("doppler", n = n_amostras)
+n_samples = 2048
+signal_pure = rLifting:::.generate_signal("doppler", n = n_samples)
 
-# Adicionando ruído Gaussiano
-ruido = rnorm(n_amostras, sd = 0.5)
-sinal_ruidoso = sinal_puro + ruido
+# Add Gaussian noise
+noise = rnorm(n_samples, sd = 0.5)
+signal_noisy = signal_pure + noise
 
-# Preparando DataFrame para ggplot
-df_sinal = data.frame(
-  Index = 1:n_amostras,
-  Original = sinal_puro,
-  Ruidoso = sinal_ruidoso
+# Prepare DataFrame for ggplot
+df_signal = data.frame(
+  Index = 1:n_samples,
+  Original = signal_pure,
+  Noisy = signal_noisy
 )
 
-# Visualizando
-ggplot(df_sinal, aes(x = Index)) +
-  geom_line(aes(y = Ruidoso, color = "Ruído"), alpha = 0.6, size = 0.3) +
+# Visualization
+ggplot(df_signal, aes(x = Index)) +
+  geom_line(aes(y = Noisy, color = "Noisy"), alpha = 0.6, size = 0.3) +
   geom_line(aes(y = Original, color = "Original"), size = 0.8) +
-  scale_color_manual(values = c("Original" = "black", "Ruído" = "grey30")) +
+  scale_color_manual(values = c("Original" = "black", "Noisy" = "grey30")) +
   labs(
-    title = "Função doppler com ruído", 
+    title = "Doppler Function with Noise", 
     y = "Amplitude", 
-    color = "Legenda"
+    color = "Legend"
     ) +
   theme_bw() +
   theme(legend.position = "top")
 ```
 
-### Suavização não-causal (global)
+### Offline Denoising (Non-Causal / Global)
 
-A função `denoise_signal_offline` processa o vetor inteiro de uma vez.
-Ela usa estatísticas globais do sinal para definir o limiar de corte (*threshold*).
+The function `denoise_signal_offline` processes the entire vector in a single batch.
+It calculates the noise threshold based on the **global median absolute deviation (MAD)** of the detail coefficients across the whole signal.
 
-**Nota sobre Extensão**: ondaletas precisam tratar as bordas do sinal.
-O padrão do pacote é `extension = "symmetric"` (espelhamento), que reduz artefatos nas pontas.
-Outras opções são `"periodic"` (circular) e `"zero"` (*padding* com zeros).
-Isso não é um problema para a ondaleta de Haar, mas para as demais ondaletas é necessário pensar na extensão com cuidado.
+**A Note on Boundary Extension:** Wavelets need to handle signal boundaries.
+The package default is `extension = "symmetric"` (reflection), which reduces artifacts at the edges.
+Other options are `"periodic"` (circular) and `"zero"` (padding).
+While Haar is robust, symmetric extension is generally recommended for smoother wavelets to avoiding discontinuities.
 
 ```{r}
-# Definição do esquema Lifting
-esquema_haar = lifting_scheme("haar")
+# Define Lifting Scheme
+scheme_haar = lifting_scheme("haar")
 
-# Aplicação de filtro
-sinal_haar = denoise_signal_offline(
-  sinal_ruidoso, 
-  scheme = esquema_haar,
-  method = "soft", # o método de thresholding. Outras opções são "hard" e "semisoft",
+# Apply Filter
+signal_haar = denoise_signal_offline(
+  signal_noisy, 
+  scheme = scheme_haar,
+  method = "soft", # Thresholding method. Options: "hard", "soft", "semisoft"
   levels = 3,
   extension = "symmetric"
 )
 
+df_signal$Offline = signal_haar
 
-df_sinal$Offline = sinal_haar
-
-ggplot(subset(df_sinal, Index >= 500 & Index <= 1000), aes(x = Index)) +
-  geom_line(aes(y = Ruidoso, color = "Ruído"), alpha = 0.5) +
+ggplot(subset(df_signal, Index >= 500 & Index <= 1000), aes(x = Index)) +
+  geom_line(aes(y = Noisy, color = "Noisy"), alpha = 0.5) +
   geom_line(aes(y = Original, color = "Original"), linetype = "dashed") +
-  geom_line(aes(y = Offline, color = "Filtrado (Haar)"), size = 1) +
+  geom_line(aes(y = Offline, color = "Filtered (Haar)"), size = 1) +
   scale_color_manual(
     values = c(
       "Original" = "black", 
-      "Ruído" = "grey30", 
-      "Filtrado (Haar)" = "royalblue")
+      "Noisy" = "grey30", 
+      "Filtered (Haar)" = "royalblue")
     ) +
   labs(
-    title = "Denoising Offline (Zoom)", 
-    subtitle = "Note os 'degraus' característicos da Haar", 
+    title = "Offline Denoising (Zoom)", 
+    subtitle = "Note the characteristic 'steps' of the Haar wavelet", 
     y = "Amplitude"
     ) +
   theme_bw() +
   theme(legend.position = "top")
 ```
 
-### Suavizador causal (tempo real)
+### Causal Denoising (Real-Time / Adaptive)
 
-Em aplicações de monitoramento (sensores, finanças), não temos acesso ao "futuro" do sinal.
-O suavizador causal utiliza uma janela deslizante e um limiar adaptativo recursivo (baseado em Liu et al., 2014).
+In monitoring applications (IoT sensors, high-frequency trading), we do not have access to the "future" of the signal.
+The causal smoother uses a **Sliding Window** and a **Recursive Adaptive Threshold** (based on Liu et al., 2014).
 
-Este método (do modo que é implementado no pacote `rLifting`) introduz dois fenômenos menos desejáveis:
+This method (as implemented in `rLifting`) introduces two physical phenomena:
 
--   Warm-up (Aquecimento): As primeiras amostras (tamanho da janela) não são filtradas (retorna o original), pois o algoritmo precisa acumular informação antes de começar a suavização.
+1.  **Warm-up:** The first samples (equal to the window size) are not filtered (returned as raw), because the algorithm needs to accumulate enough history to statistically estimate the noise level.
 
--   Lag (Atraso): O filtro demora um pouco mais para responder a mudanças bruscas, pois só "vê" o passado.
+2.  **Phase Lag:** The filter takes slightly longer to react to abrupt changes because it relies solely on past data to estimate the current state.
 
 ```{r}
-# Definição de tamanho da janela W
-janela = 256
+# Window size W
+window_w = 256
 
-# Processamento causal
-# Nota: definimos levels=3 para igualar a profundidade do offline.
-sinal_causal = denoise_signal_causal(
-  sinal_ruidoso,
-  scheme = esquema_haar,
+# Causal Processing
+# Note: We set levels=3 to match the offline depth.
+signal_causal = denoise_signal_causal(
+  signal_noisy,
+  scheme = scheme_haar,
   levels = 3,
-  window_size = janela,
+  window_size = window_w,
   method = "semisoft",
   alpha = 0.3,
   beta = 1.2
 )
 
-df_sinal$Causal = sinal_causal
+df_signal$Causal = signal_causal
 
-# Visualização comparativa (Focando no lag e suavização)
-# Vamos dar zoom numa área de transição rápida
+# Comparative Visualization (Focusing on Lag and Smoothing)
+# Zooming in on a fast transition area
 ggplot(
-  subset(df_sinal, Index >= 200 & Index <= 800), 
+  subset(df_signal, Index >= 200 & Index <= 800), 
   aes(x = Index)
   ) +
-  # Camada de ruído (fundo)
-  geom_line(aes(y = Ruidoso), color = "grey30", alpha = 0.8) +
-  # Referência
+  # Noise layer (background)
+  geom_line(aes(y = Noisy), color = "grey30", alpha = 0.8) +
+  # Reference
   geom_line(
     aes(y = Original, color = "Original"), 
     linetype = "dashed", alpha = 0.7
     ) +
-  # Comparação
+  # Comparison
   geom_line(aes(y = Offline, color = "Offline (Global)"), size = 0.8) +
   geom_line(aes(y = Causal, color = "Causal (Real-Time)"), size = 0.8) +
-  # Marcador de Janela
-  geom_vline(xintercept = janela, linetype = "dotted", color = "black") +
+  # Warm-up Marker
+  geom_vline(xintercept = window_w, linetype = "dotted", color = "black") +
   annotate(
     "text", 
-    x = janela + 5, 
-    y = max(sinal_puro) + 1, 
-    label = "Fim Warm-up",
+    x = window_w + 5, 
+    y = max(signal_pure) + 1, 
+    label = "Warm-up End",
     hjust = 0, 
     color = "black", 
     size = 3
@@ -185,74 +195,52 @@ ggplot(
       )
     ) +
   labs(
-    title = "Comparativo: Offline vs Causal",
-    subtitle = "O Causal remove parte do ruído (fundo cinza) mas apresenta atraso de fase natural",
+    title = "Comparison: Offline vs. Causal",
+    subtitle = "Causal removes noise but exhibits natural phase lag compared to Offline",
     y = "Amplitude"
     ) +
   theme_bw() +
   theme(legend.position = "bottom")
 ```
 
-É fácil ver que ambos os métodos melhoram consideravelmente a relação entre o sinal e o ruído quando comparados ao sinal original.
-O método não-causal, por poder "olhar para o futuro", é um pouco melhor neste processo.
-Por outro lado, o método causal também é bastante eficiente em reduzir o ruído.
+It is evident that both methods significantly improve the signal-to-noise ratio.
+The **Offline** method, being able to "look ahead," is inherently superior in reconstruction accuracy.
+However, the **Causal** method proves to be a robust alternative for scenarios where looking ahead is impossible.
 
-## Informações adicionais e referências
+## Additional Information and References
 
-### Métodos de *thresholding*
+### Thresholding Methods
 
-O pacote disponibiliza três métodos principais para corte de coeficientes.
-A escolha impacta diretamente no viés e na variância do resultado.
-São eles:
+The choice of the shrinkage function defines how wavelet coefficients are attenuated.
+`rLifting` provides three approaches:
 
--   `hard`: mantém a amplitude original, mas pode gerar artefatos abruptos.
--   `soft`: contrai tudo em direção a zero. Resultado muito suave, mas com viés de amplitude.
--   `semisoft`: (Padrão) tenta equilibrar os dois, usando uma função hiperbólica $\sqrt{(x^2−λ^2)}$.
+-   `hard`: Keeps the original amplitude of surviving coefficients but its discontinuity generates higher variance (residual artifacts).
 
-```{r}
-x_vals = seq(-3, 3, by = 0.01)
-lambda = 1
+-   `soft`: Shrinks everything towards zero.
+    Result is very smooth but introduces amplitude bias (shrinks the signal along with the noise).
 
-df_thresh = data.frame(
-  Input = x_vals,
-  Hard = rLifting::threshold_hard(x_vals, lambda),
-  Soft = rLifting::threshold_soft(x_vals, lambda),
-  Semisoft = rLifting::threshold_semisoft(x_vals, lambda)
-) |> pivot_longer(-Input, names_to = "Metodo", values_to = "Output")
+-   `semisoft`: (Default) A hyperbolic balance.
+    Behaves like `hard` for large amplitudes (preserving peaks) and `soft` for small amplitudes (stability).
 
-ggplot(df_thresh, aes(x = Input, y = Output, color = Metodo)) +
-  geom_abline(
-    slope = 1, intercept = 0, 
-    linetype = "dotted", color = "gray30"
-    ) +
-  geom_line(size = .55) +
-  scale_color_manual(
-    values = c(
-      "Hard" = "firebrick", 
-      "Soft" = "royalblue", 
-      "Semisoft" = "black")
-    ) +
-  labs(title = "Funções de Thresholding (lambda = 1)", y = "Saída") +
-  theme_bw()
-```
+### Available Wavelets
 
-### Ondaletas disponíveis
+Beyond `haar`, the package natively includes:
 
-Além da `haar`, o pacote já inclui nativamente:
+-   `db2`: Daubechies 4-taps (Asymmetric).
 
--   `db2`: Daubechies 4-taps (assimétrica).
+-   `cdf53` (or bior2.2): LeGall 5/3 (Linear, fast, integer-ready).
 
--   `cdf53` (ou bior2.2): LeGall 5/3 (linear, rápida).
+-   `cdf97` (or bior4.4): Cohen-Daubechies-Feauveau 9/7 (Smooth, used in JPEG2000).
 
--   `cdf97` (ou bior4.4): Cohen-Daubechies-Feauveau 9/7 (suave, usada no JPEG2000).
+-   `dd4`: Deslauriers-Dubuc (Cubic interpolating).
 
--   `dd4`: Deslauriers-Dubuc (interpoladora cúbica).
+### Next Steps
 
-### Próximos passos
+`rLifting` is extensible.
+Check the other vignettes for deeper dives:
 
-O `rLifting` é extensível.
-Confira os outros guias para maior aprofundamento.
+1.  **Custom Wavelets:** Learn how to implement complex wavelets (like DB4) manually using the `lift_steps` API.
 
-1.  Ondaletas customizadas: aprenda a implementar ondaletas mais complexas (como DB4) manualmente usando a API `lift_steps`.
-2.  Comparações estatísticas: comparativos entre os diferentes métodos de *thresholding*, suavizadores causais e não-causais e ondaletas, baseados em viés, qualidade do sinal, e erro quadrático médio.
-3.  Performance computacional: estudo de performance computacional do método de suavização em tempo real.
+2.  **Statistical Benchmarks:** Comprehensive comparisons between thresholding methods and causal/non-causal approaches using Monte Carlo simulations.
+
+3.  **Computational Performance:** Stress testing the C++ engine for high-frequency throughput.

@@ -1,10 +1,10 @@
 #' Hard Thresholding
 #'
-#' Sets coefficients below the threshold to zero, keeps others unchanged.
-#' Equivalent to "keep or kill".
+#' Sets coefficients below the threshold to zero, keeping others unchanged.
+#' Known as the "keep or kill" policy.
 #'
 #' @param x Vector of coefficients (details).
-#' @param lambda Positive threshold.
+#' @param lambda Positive threshold value.
 #'
 #' @return Processed vector.
 #' @export
@@ -14,11 +14,12 @@ threshold_hard = function(x, lambda) {
 
 #' Soft Thresholding
 #'
-#' Sets coefficients below the threshold to zero and shrinks others towards zero.
-#' Reduces noise but introduces amplitude bias.
+#' Sets coefficients below the threshold to zero and shrinks others
+#'  towards zero.
+#' Reduces noise variance but introduces amplitude bias.
 #'
 #' @param x Vector of coefficients.
-#' @param lambda Positive threshold.
+#' @param lambda Positive threshold value.
 #'
 #' @return Processed vector.
 #' @export
@@ -29,11 +30,12 @@ threshold_soft = function(x, lambda) {
 #' Semisoft Shrinkage (Hyperbolic)
 #'
 #' Implementation based on Liu et al. (2014).
-#' Combines the stability of soft thresholding with the amplitude precision of Hard.
+#' Combines the stability of Soft Thresholding with the amplitude precision of
+#'  Hard Thresholding.
 #' Function: sign(x) * sqrt(x^2 - lambda^2) for |x| > lambda.
 #'
 #' @param x Vector of coefficients.
-#' @param lambda Positive threshold.
+#' @param lambda Positive threshold value.
 #'
 #' @return Processed vector.
 #' @export
@@ -44,11 +46,10 @@ threshold_semisoft = function(x, lambda) {
 #' General Thresholding Wrapper
 #'
 #' @param x Input vector.
-#' @param lambda Threshold.
-#' @param method "hard", "soft" or "semisoft".
+#' @param lambda Threshold value.
+#' @param method Method: "hard", "soft" or "semisoft".
 #' @export
 threshold = function(x, lambda, method = "soft") {
-  # Dispatch simples
   switch(
     method,
     hard = threshold_hard(x, lambda),

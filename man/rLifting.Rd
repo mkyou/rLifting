@@ -4,13 +4,22 @@
 \name{rLifting}
 \alias{rLifting-package}
 \alias{rLifting}
-\title{rLifting: Real-Time Signal Denoising via Lifting Scheme}
+\title{rLifting: High-Performance Wavelet Lifting Transforms}
 \description{
-A package for wavelet transforms using the Lifting Scheme, focused on
-real-time (causal) applications, adaptive thresholding, and custom
-wavelet construction.
+A unified framework for Wavelet Transforms using the Lifting Scheme.
+It provides robust tools for offline signal analysis and functional data
+analysis (FDA), while also enabling high-performance causal processing
+for real-time applications via a specialized C++ core.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/mkyou/rLifting}
+  \item Report bugs at \url{https://github.com/mkyou/rLifting/issues}
+}
+
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: da Silva Moisés \email{moisesdff8@gmail.com}
 
 }

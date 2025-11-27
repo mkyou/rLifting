@@ -1,18 +1,18 @@
-#' Offline Denoising (Non-Causal / Global)
+#' Offline Denoising (Global Batch)
 #'
-#' Applies the wavelet to the entire signal at once. Uses global statistics
-#' for recursive threshold calculation (Eq. 9).
-#' This function is fully optimized in C++.
+#' Performs denoising on the entire signal at once using a non-causal approach.
+#' Uses global statistics for recursive threshold calculation (Eq. 9).
+#' This function is fully optimized in C++ (Zero-Allocation).
 #'
-#' @param signal Complete signal.
-#' @param scheme `lifting_scheme` object.
+#' @param signal Numeric vector containing the complete signal.
+#' @param scheme A `lifting_scheme` object.
 #' @param alpha Recursive threshold parameter.
 #' @param beta Threshold scale factor.
-#' @param levels Decomposition levels.
-#' @param method Method ('hard', 'soft', 'semisoft').
+#' @param levels Number of decomposition levels.
+#' @param method Thresholding method ('hard', 'soft', 'semisoft').
 #' @param extension Extension mode ('symmetric', 'periodic', 'zero').
 #'
-#' @return Filtered signal.
+#' @return Filtered numeric vector (same length as input).
 #' @export
 denoise_signal_offline = function(
     signal,
@@ -24,7 +24,6 @@ denoise_signal_offline = function(
     extension = "symmetric"
 ) {
 
-  # Mapeia extensao para inteiro (C++)
   ext_int = switch(
     extension,
     "symmetric" = 1L,
@@ -33,8 +32,6 @@ denoise_signal_offline = function(
     1L
   )
 
-  # Chama pipeline unificado
-  # A funcao C++ faz LWT -> Threshold -> ILWT internamente.
   res = denoise_offline_cpp(
     as.numeric(signal),
     scheme$steps,

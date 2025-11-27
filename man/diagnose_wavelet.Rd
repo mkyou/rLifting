@@ -14,16 +14,7 @@ diagnose_wavelet(wavelet_name, config, verbose = TRUE)
 \item{verbose}{Print results to console?}
 }
 \value{
-(Invisible) A list containing the results of each test:
-\itemize{
-\item Perfect Reconstruction
-\item Orthogonality
-\item Vanishing Moments (for each degree)
-\item Compact Support
-\item Shift Sensitivity
-}
-Each item contains: \code{$passed} (TRUE/FALSE), \code{$metric}
-(numeric value), and \code{$msg}.
+(Invisible) A list containing the results of each test.
 }
 \description{
 Runs a battery of physical and mathematical tests on a wavelet.

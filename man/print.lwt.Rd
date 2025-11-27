@@ -7,9 +7,9 @@
 \method{print}{lwt}(x, ...)
 }
 \arguments{
-\item{x}{Object of class \code{lwt}.}
+\item{x}{An object of class lwt.}
 
-\item{...}{Additional arguments (not used).}
+\item{...}{Additional arguments.}
 }
 \description{
 Print method for LWT

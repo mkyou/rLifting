@@ -1,0 +1,124 @@
+/* vignettes/style.css - Estilo baseado em TF.Rmd */
+
+body {
+  /* Fonte Serifada Clássica */
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 18px; /* Ajustado para leitura web (1.5em pode ser excessivo em telas pequenas) */
+  line-height: 1.6;
+  text-align: justify; /* Texto justificado conforme TF.Rmd */
+  color: #333;
+
+  /* Centralização e Margens */
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: #ffffff;
+}
+
+/* Títulos - Cor Teal Escuro */
+h1, h2, h3, h4 {
+  font-weight: 400; /* Peso leve conforme TF.Rmd */
+  color: #005f73;   /* Cor Primária */
+  margin-top: 2.2em;
+  margin-bottom: 1.2em;
+}
+
+/* Título Principal */
+h1 {
+  font-size: 2.5em;
+  border-bottom: 1px solid #005f73;
+  padding-bottom: 10px;
+  text-align: center;
+}
+
+/* Links */
+a {
+  color: #005f73; /* Cor Primária */
+  text-decoration: none;
+  border-bottom: 1px dotted #005f73;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #ae2012; /* Cor Secundária (Vermelho Queimado) conforme TF.Rmd */
+  border-bottom: 1px solid #ae2012;
+}
+
+/* Blocos de Código (Chunks) */
+pre {
+  background-color: #f4f7f8; /* Fundo muito leve, levemente azulado/cinza */
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid #005f73; /* Identidade visual no código */
+  border-radius: 2px;
+  padding: 15px;
+  font-size: 0.85em;
+  overflow-x: auto;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+}
+
+pre code {
+  font-family: "Consolas", "Monaco", monospace;
+  background: transparent;
+}
+
+/* Legendas (Captions) conforme TF.Rmd */
+.caption {
+  color: #555;
+  font-size: 0.9em;
+  text-align: left;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* Tabelas */
+table {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
+  margin-bottom: 2em;
+}
+
+th {
+  border-bottom: 2px solid #005f73;
+  text-align: left;
+  padding: 8px;
+  color: #005f73;
+}
+
+td {
+  border-bottom: 1px solid #ddd;
+  padding: 8px;
+}
+
+/* Imagens */
+img {
+  display: block;
+  margin: 2em auto;
+  max-width: 100%;
+  box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+/* Ajuste do Sumário (TOC) padrão do rmarkdown */
+#TOC {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  padding: 20px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+#TOC ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+#TOC a {
+  border-bottom: none;
+}
+
+#TOC a:hover {
+  color: #ae2012;
+  text-decoration: underline;
+}

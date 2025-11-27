@@ -17,5 +17,5 @@ validate_orthogonality(scheme, expected = TRUE, tol = 1e-09)
 List with status and energy ratio (Out/In).
 }
 \description{
-Verifies Parseval's Theorem. Only for orthogonal wavelets.
+Verifies Parseval's Theorem. Only applicable for orthogonal wavelets.
 }
