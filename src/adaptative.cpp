@@ -4,7 +4,7 @@
 
 using namespace Rcpp;
 
-//' Helper: Mediana Absoluta (MAD) em C++
+//' Helper: mediana absoluta (MAD) em C++
  //' @keywords internal
  double calc_mad(NumericVector x) {
    int n = x.size();
@@ -14,7 +14,7 @@ using namespace Rcpp;
    std::vector<double> abs_x(n);
    for(int i=0; i<n; i++) abs_x[i] = std::abs(x[i]);
 
-   // Algoritmo de Selecao (mais rapido que sort total)
+   // Algoritmo de selecao (mais rapido que sort total)
    // Coloca a mediana na posicao n/2
    int mid = n / 2;
    std::nth_element(abs_x.begin(), abs_x.begin() + mid, abs_x.end());
@@ -48,7 +48,7 @@ using namespace Rcpp;
  ) {
    NumericVector lambdas(max_level);
 
-   // 1. Estimar Ruido (Sigma) via MAD
+   // Estimar ruido (sigma) via MAD
    double mad_val = calc_mad(d1);
    double sigma = mad_val / 0.6745;
 
@@ -56,21 +56,21 @@ using namespace Rcpp;
      return lambdas; // Retorna tudo zero
    }
 
-   // 2. Lambda Nivel 1
+   // Lambda nivel 1
    int n1 = d1.size();
    // Log natural em C++ e std::log
    double lambda_1 = beta * sigma * std::sqrt(2.0 * std::log((double)n1));
    lambdas[0] = lambda_1;
 
-   // 3. Recursao para niveis superiores (i = 2 ate max)
-   // Nota: No vetor C++ indices sao 0..max-1.
+   // Recursao para niveis superiores (i = 2 ate max)
+   // Nota: no vetor C++ indices sao 0..max-1.
    // A formula usa 'i' como nivel (1, 2...).
 
    for (int k = 1; k < max_level; k++) {
      int level = k + 1; // Nivel atual (2, 3...)
      double prev = lambdas[k-1];
 
-     // Formula Eq(9): L_i = L_{i-1} * (i-1) / (i + alpha - 1)
+     // Formula Liu et al Eq(9): L_i = L_{i-1} * (i-1) / (i + alpha - 1)
      double factor = (double)(level - 1) / (double)(level + alpha - 1);
      lambdas[k] = prev * factor;
    }

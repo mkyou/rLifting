@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ```
 
 Este guia introduz as funcionalidades principais do pacote `rLifting`.
-Focaremos na aplicação prática de ondaletas para remoção de ruído (*denoising*), comparando a abordagem clássica (*offline*/global) com a abordagem de tempo real (causal/adaptativa).
+Focaremos na aplicação prática de ondaletas para remoção de ruído (*denoising*), comparando a abordagem clássica (*offline*/não-causal/limiares globais) com a abordagem de tempo real (causal/limiares adaptativos).
 
 ## Configurações iniciais
 
@@ -33,14 +33,9 @@ Para utilizar o `rLifting`, certifique-se de que o pacote está instalado e carr
 Para este tutorial, também precisaremos das bibliotecas `ggplot2` e `tidyr`.
 
 ```{r}
-# Instalação (se estiver local)
-# install.packages("path/to/rLifting", repos = NULL, type = "source")
-
-#library(rLifting)
+library(rLifting)
 library(ggplot2)
 library(tidyr)
-
-devtools::load_all()
 ```
 
 ## Exemplo prático: Haar e a função Doppler
@@ -80,7 +75,7 @@ ggplot(df_sinal, aes(x = Index)) +
   theme(legend.position = "top")
 ```
 
-### Suavização *offline* (global)
+### Suavização não-causal (global)
 
 A função `denoise_signal_offline` processa o vetor inteiro de uma vez.
 Ela usa estatísticas globais do sinal para definir o limiar de corte (*threshold*).
@@ -98,7 +93,8 @@ esquema_haar = lifting_scheme("haar")
 sinal_haar = denoise_signal_offline(
   sinal_ruidoso, 
   scheme = esquema_haar,
-  method = "soft", # o método de thresholding. Outras opções são "hard" e "semisoft"
+  method = "soft", # o método de thresholding. Outras opções são "hard" e "semisoft",
+  levels = 3,
   extension = "symmetric"
 )
 
@@ -129,19 +125,24 @@ ggplot(subset(df_sinal, Index >= 500 & Index <= 1000), aes(x = Index)) +
 Em aplicações de monitoramento (sensores, finanças), não temos acesso ao "futuro" do sinal.
 O suavizador causal utiliza uma janela deslizante e um limiar adaptativo recursivo (baseado em Liu et al., 2014).
 
-Este método (do modo que é implementado no pacote `rLifting`) introduz dois fenômenos menos desejáveis: - Warm-up (Aquecimento): As primeiras amostras (tamanho da janela) não são filtradas (retorna o original), pois o algoritmo precisa acumular informação antes de começar a suavização.
-- Lag (Atraso): O filtro demora um pouco mais para responder a mudanças bruscas, pois só "vê" o passado.
+Este método (do modo que é implementado no pacote `rLifting`) introduz dois fenômenos menos desejáveis:
+
+-   Warm-up (Aquecimento): As primeiras amostras (tamanho da janela) não são filtradas (retorna o original), pois o algoritmo precisa acumular informação antes de começar a suavização.
+
+-   Lag (Atraso): O filtro demora um pouco mais para responder a mudanças bruscas, pois só "vê" o passado.
 
 ```{r}
 # Definição de tamanho da janela W
 janela = 256
 
 # Processamento causal
+# Nota: definimos levels=3 para igualar a profundidade do offline.
 sinal_causal = denoise_signal_causal(
   sinal_ruidoso,
   scheme = esquema_haar,
+  levels = 3,
   window_size = janela,
-  method = "semisoft", # Semisoft tende a preservar melhor a amplitude
+  method = "semisoft",
   alpha = 0.3,
   beta = 1.2
 )
@@ -191,6 +192,10 @@ ggplot(
   theme_bw() +
   theme(legend.position = "bottom")
 ```
+
+É fácil ver que ambos os métodos melhoram consideravelmente a relação entre o sinal e o ruído quando comparados ao sinal original.
+O método não-causal, por poder "olhar para o futuro", é um pouco melhor neste processo.
+Por outro lado, o método causal também é bastante eficiente em reduzir o ruído.
 
 ## Informações adicionais e referências
 

@@ -29,17 +29,18 @@ using namespace Rcpp;
        std::string d_name = "d" + std::to_string(j);
        NumericVector current_det = as<NumericVector>(coeffs_list[d_name]);
 
-       // Clones para manipular (Rcpp pointers sao perigosos se nao clonar aqui)
+       // Clones para manipular
+       // (Rcpp pointers sao perigosos se nao clonar aqui)
        NumericVector even = clone(current_app);
        NumericVector odd  = clone(current_det);
 
-       // 1. Desfazer Normalizacao
+       // Desfazer normalizacao
        // norm[0]=K, norm[1]=1/K.
        // Na ida multiplicamos. Na volta dividimos.
        for(int i=0; i<even.size(); i++) even[i] /= norm[0];
        for(int i=0; i<odd.size(); i++)  odd[i]  /= norm[1];
 
-       // 2. Reverse Lifting Steps
+       // Reverse lifting steps
        // Iterar de tras pra frente
        int n_steps = steps.size();
        for (int k = n_steps - 1; k >= 0; k--) {
@@ -51,20 +52,26 @@ using namespace Rcpp;
           // Na ida: Predict faz d = d - P(e)
           // Na volta: d = d + P(e) (SOMA)
           if (type == "predict") {
-             NumericVector pred = apply_filter_cpp(even, coeffs, start_idx, ext_mode);
+             NumericVector pred = apply_filter_cpp(
+                 even, coeffs,
+                 start_idx, ext_mode
+              );
              int len = std::min(odd.size(), pred.size());
              for(int m=0; m<len; m++) odd[m] += pred[m];
           }
-          // Na ida: Update faz a = a + U(d)
+          // Na ida: update faz a = a + U(d)
           // Na volta: a = a - U(d) (SUBTRACAO)
           else if (type == "update") {
-             NumericVector upd = apply_filter_cpp(odd, coeffs, start_idx, ext_mode);
+             NumericVector upd = apply_filter_cpp(
+                 odd, coeffs,
+                 start_idx, ext_mode
+              );
              int len = std::min(even.size(), upd.size());
              for(int m=0; m<len; m++) even[m] -= upd[m];
           }
        }
 
-       // 3. Merge (Inverse Lazy Wavelet)
+       // Merge (Inverse Lazy Wavelet)
        // Intercalar: even[0], odd[0], even[1], odd[1]...
        int n_total = even.size() + odd.size();
        NumericVector merged(n_total);

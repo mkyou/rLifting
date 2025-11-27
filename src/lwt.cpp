@@ -25,13 +25,13 @@ using namespace Rcpp;
    NumericVector current_app = clone(signal);
    // Copia para nao alterar o original
 
-   // Loop de Niveis (j = 1 ate levels)
+   // Loop de niveis (j = 1 ate levels)
    for (int j = 1; j <= levels; j++) {
      int n = current_app.size();
 
-     // 1. Lazy Wavelet (Split)
-     // R (1-based): Impares=x[1,3..] (Pares orig),
-     // Pares=x[2,4..] (Impares orig)
+     // Lazy wavelet (split)
+     // R (1-based): impares=x[1,3..] (Pares orig),
+     // Pares=x[2,4..] (impares orig)
      // C++ (0-based):
      //   Even (R concept) -> indices 0, 2, 4...
      //   Odd  (R concept) -> indices 1, 3, 5...
@@ -46,7 +46,7 @@ using namespace Rcpp;
      for (int i = 0; i < n_even; i++) even[i] = current_app[2*i];
      for (int i = 0; i < n_odd; i++)  odd[i]  = current_app[2*i + 1];
 
-     // 2. Lifting Steps
+     // Lifting steps
      int n_steps = steps.size();
 
      for (int k = 0; k < n_steps; k++) {
@@ -79,12 +79,12 @@ using namespace Rcpp;
        }
      }
 
-     // 3. Normalizacao
+     // Normalizacao
      // norm[0] = K (approx), norm[1] = 1/K (detail)
      for(int m=0; m<even.size(); m++) even[m] *= norm[0];
      for(int m=0; m<odd.size(); m++)  odd[m]  *= norm[1];
 
-     // 4. Armazenar e Preparar proximo nivel
+     // Armazenar e preparar proximo nivel
      // Nomes no R sao "d1", "d2"...
      std::string d_name = "d" + std::to_string(j);
      coeffs_out[d_name] = odd;

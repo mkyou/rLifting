@@ -9,19 +9,21 @@ library(rLifting)
 library(parallel)
 library(dplyr)
 
-N_SIMS = 1000 # total de curvas por sinal
-T_POINTS = 2048 # pontos por curva
-SIGMA_NOISE = 0.2 # desvio padrão do ruído
+# --- CONFIGURAÇÃO DA SIMULAÇÃO ---
+N_SIMS = 1000        # total de curvas por sinal
+T_POINTS = 2048      # pontos por curva
+SIGMA_NOISE = 0.2    # desvio padrão do ruído
+DECOMP_LEVELS = 3    # Níveis de decomposição (Justiça no benchmark)
 OUTPUT_FILE = "vignettes/sim_results_N1000.rds"
 
-# Frequência de atualização do thresholding causal (para ganhar velocidade)
+# Frequência de atualização do thresholding causal
 UPDATE_FREQ_CAUSAL = 16
 
 # Paralelismo
 NUM_CORES = parallel::detectCores(logical = FALSE) - 1
 if (NUM_CORES < 1) NUM_CORES = 1
 
-# Tamanho do bloco para atualização da barra de progresso
+# Tamanho do bloco
 CHUNK_SIZE = 100
 
 set.seed(42)
@@ -44,11 +46,12 @@ calc_metrics = function(original, processado) {
 
 run_single_simulation = function(
     sinal_ruidoso, sinal_puro,
-    grid, update_freq_val
-    ) {
+    grid, update_freq_val, levels_val
+) {
   n_grid = nrow(grid)
   matriz_res = matrix(NA, nrow = n_grid + 1, ncol = 3)
 
+  # Baseline (Sem processamento)
   matriz_res[1, ] = calc_metrics(sinal_puro, sinal_ruidoso)
 
   for (i in 1:n_grid) {
@@ -58,11 +61,13 @@ run_single_simulation = function(
     if (p$Mode == "Offline") {
       proc = denoise_signal_offline(
         sinal_ruidoso, sch,
+        levels = levels_val, # Explicito
         method = p$Method, extension = p$Extension
       )
     } else {
       proc = denoise_signal_causal(
         sinal_ruidoso, sch,
+        levels = levels_val, # Explicito
         window_size = 256,
         method = p$Method,
         extension = p$Extension,
@@ -75,7 +80,6 @@ run_single_simulation = function(
 }
 
 # Definição de grid
-
 grid_params = expand.grid(
   Wavelet = c("haar", "db2", "cdf53", "cdf97", "dd4"),
   Mode = c("Offline", "Causal"),
@@ -89,17 +93,17 @@ clusterEvalQ(cl, { library(rLifting) })
 clusterExport(
   cl, c(
     "run_single_simulation", "calc_metrics",
-    "grid_params", "UPDATE_FREQ_CAUSAL"
-    )
+    "grid_params", "UPDATE_FREQ_CAUSAL", "DECOMP_LEVELS"
   )
+)
 
 # Execução
 cat(
   sprintf(
-    "INICIANDO SIMULAÇÃO (N=%d, Cores=%d, Stride=%d)\n",
-    N_SIMS, NUM_CORES, UPDATE_FREQ_CAUSAL
-    )
+    "INICIANDO SIMULAÇÃO (N=%d, L=%d, Cores=%d)\n",
+    N_SIMS, DECOMP_LEVELS, NUM_CORES
   )
+)
 
 resultados_globais = list()
 tipos_sinal = c("bumps", "doppler", "heavisine")
@@ -112,10 +116,9 @@ for (tipo in tipos_sinal) {
   matriz_ruido = matrix(
     rnorm(T_POINTS * N_SIMS, sd = SIGMA_NOISE),
     ncol = N_SIMS
-    )
+  )
   matriz_sinais = matriz_ruido + sinal_puro
 
-  # Exportar sinal puro para workers (específico deste loop)
   clusterExport(cl, "sinal_puro", envir = environment())
 
   # Processamento em chunks
@@ -123,12 +126,10 @@ for (tipo in tipos_sinal) {
   chunks = split(indices, ceiling(seq_along(indices)/CHUNK_SIZE))
 
   lista_res_parcial = list()
-
   pb = txtProgressBar(min = 0, max = N_SIMS, style = 3)
 
   for (chunk_idx in seq_along(chunks)) {
     idx_batch = chunks[[chunk_idx]]
-
     lista_inputs = as.list(
       as.data.frame(
         matriz_sinais[, idx_batch, drop=FALSE]
@@ -136,7 +137,10 @@ for (tipo in tipos_sinal) {
       )
 
     res_chunk = parLapply(cl, lista_inputs, function(col) {
-      run_single_simulation(col, sinal_puro, grid_params, UPDATE_FREQ_CAUSAL)
+      run_single_simulation(
+        col, sinal_puro, grid_params,
+        UPDATE_FREQ_CAUSAL, DECOMP_LEVELS
+        )
     })
 
     lista_res_parcial = c(lista_res_parcial, res_chunk)
