@@ -20,6 +20,6 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: da Silva Moisés \email{moisesdff8@gmail.com}
+\strong{Maintainer}: Moises da Silva \email{moisesdff8@gmail.com}
 
 }

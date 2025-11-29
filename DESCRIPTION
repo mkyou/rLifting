@@ -3,17 +3,12 @@ Title: High-Performance Wavelet Lifting Transforms
 Version: 0.9.0
 Date: 2025-11-27
 Authors@R: 
-    person(
-    "da Silva", "Moisés", , 
-    "moisesdff8@gmail.com", 
-    role = c("aut", "cre")
-    )
-Description: Performs Wavelet Lifting Transforms focusing on signal denoising. 
-    Implements a hybrid architecture with a zero-allocation C++ core for 
-    high-performance processing. 
-    Features include unified offline (batch) denoising, causal 
-    (real-time) filtering using a ring buffer engine, 
-    and adaptive recursive thresholding.
+    person(given = "Moises", family = "da Silva", email = "moisesdff8@gmail.com", role = c("aut", "cre"))
+Description: Performs Wavelet Lifting Transforms focusing on signal denoising 
+    and functional data analysis (FDA). Implements a hybrid architecture with 
+    a zero-allocation C++ core for high-performance processing. Features include 
+    unified offline (batch) denoising, causal (real-time) filtering using a 
+    ring buffer engine, and adaptive recursive thresholding.
 License: MIT + file LICENSE
 URL: https://github.com/mkyou/rLifting
 BugReports: https://github.com/mkyou/rLifting/issues

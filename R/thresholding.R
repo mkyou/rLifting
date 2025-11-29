@@ -15,7 +15,7 @@ threshold_hard = function(x, lambda) {
 #' Soft Thresholding
 #'
 #' Sets coefficients below the threshold to zero and shrinks others
-#'  towards zero.
+#' towards zero.
 #' Reduces noise variance but introduces amplitude bias.
 #'
 #' @param x Vector of coefficients.
@@ -30,9 +30,9 @@ threshold_soft = function(x, lambda) {
 #' Semisoft Shrinkage (Hyperbolic)
 #'
 #' Implementation based on Liu et al. (2014).
-#' Combines the stability of Soft Thresholding with the amplitude precision of
-#'  Hard Thresholding.
-#' Function: sign(x) * sqrt(x^2 - lambda^2) for |x| > lambda.
+#' Combines the stability of Soft Thresholding with the amplitude
+#' precision of Hard Thresholding.
+#' Function: \code{sign(x) * sqrt(x^2 - lambda^2)} for values above lambda.
 #'
 #' @param x Vector of coefficients.
 #' @param lambda Positive threshold value.

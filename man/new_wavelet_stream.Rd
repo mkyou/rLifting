@@ -33,13 +33,13 @@ new_wavelet_stream(
 \item{update_freq}{How often to recompute threshold statistics (default 1).}
 }
 \value{
-A closure function \code{processor(new_sample)} that accepts a single
-numeric value and returns the filtered value immediately.
+A closure function \code{processor(new_sample)} that accepts
+a single numeric value and returns the filtered value immediately.
 }
 \description{
 Generates a stateful function backed by a high-performance C++
 Ring Buffer engine.
 It implements Sliding Window + Lifting Decomposition +
 Adaptive Thresholding
-in $O(1)$ amortized time per sample.
+in constant amortized time (O(1)) per sample.
 }

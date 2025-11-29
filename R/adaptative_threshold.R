@@ -4,11 +4,12 @@
 #' Implements the recursive formula from Liu et al. (2014).
 #' Accelerated with C++.
 #'
-#' @param lwt_obj Object returned by `lwt()`.
+#' @param lwt_obj Object returned by \code{lwt()}.
 #' @param alpha Recursive adjustment parameter (Eq. 9).
 #' @param beta Initial threshold scale factor (Eq. 9).
 #'
-#' @return List of thresholds for each decomposition level (d1, d2...).
+#' @return List of thresholds for each decomposition level
+#' (\code{d1}, \code{d2}...).
 #' @export
 compute_adaptive_threshold = function(lwt_obj, alpha = 0.3, beta = 1.2) {
 

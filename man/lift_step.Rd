@@ -16,9 +16,8 @@ lift_step(
 
 \item{coeffs}{Numeric vector containing the filter coefficients.}
 
-\item{start_idx}{(Optional) Manual start index.
-If provided, ignores the \code{position} parameter.
-Use this for fine-grained control.}
+\item{start_idx}{(Optional) Manual start index. If provided, ignores the
+\code{position} parameter. Use this for fine-grained control.}
 
 \item{position}{Automatic index adjustment
 (used only if \code{start_idx} is NULL):

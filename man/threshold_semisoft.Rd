@@ -16,7 +16,7 @@ Processed vector.
 }
 \description{
 Implementation based on Liu et al. (2014).
-Combines the stability of Soft Thresholding with the amplitude precision of
-Hard Thresholding.
-Function: sign(x) * sqrt(x^2 - lambda^2) for |x| > lambda.
+Combines the stability of Soft Thresholding with the amplitude
+precision of Hard Thresholding.
+Function: \code{sign(x) * sqrt(x^2 - lambda^2)} for values above lambda.
 }

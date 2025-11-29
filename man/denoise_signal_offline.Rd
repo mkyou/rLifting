@@ -25,9 +25,9 @@ denoise_signal_offline(
 
 \item{levels}{Number of decomposition levels.}
 
-\item{method}{Thresholding method ('hard', 'soft', 'semisoft').}
+\item{method}{Thresholding method ("hard", "soft", "semisoft").}
 
-\item{extension}{Extension mode ('symmetric', 'periodic', 'zero').}
+\item{extension}{Extension mode ("symmetric", "periodic", "zero").}
 }
 \value{
 Filtered numeric vector (same length as input).

@@ -4,14 +4,14 @@
 #' Optimized with C++ backend.
 #'
 #' @param signal Numeric vector containing the input signal.
-#' @param scheme A `lifting_scheme` object.
+#' @param scheme A \code{lifting_scheme} object.
 #' @param levels Integer. Number of decomposition levels.
 #' @param extension Boundary extension mode: "symmetric" (default),
 #' "periodic", or "zero".
 #'
-#' @return An object of class 'lwt' containing:
-#' \item{coeffs}{List of details (d1..dn) and approximation (an).}
-#' \item{scheme}{The scheme used.}
+#' @return An object of class 'lwt'. It is a list containing
+#' 'coeffs' (list of details d1..dn and approximation an) and
+#' 'scheme' (the scheme object used).
 #' @export
 #'
 #' @examples

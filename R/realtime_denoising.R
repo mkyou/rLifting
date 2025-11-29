@@ -1,12 +1,12 @@
 #' Create an Adaptive Wavelet Stream Processor (C++ Core)
 #'
 #' Generates a stateful function backed by a high-performance C++
-#'  Ring Buffer engine.
+#' Ring Buffer engine.
 #' It implements Sliding Window + Lifting Decomposition +
 #'  Adaptive Thresholding
-#' in $O(1)$ amortized time per sample.
+#' in constant amortized time (O(1)) per sample.
 #'
-#' @param scheme A `lifting_scheme` object.
+#' @param scheme A \code{lifting_scheme} object.
 #' @param window_size Sliding window size (W). Must be > 8.
 #' @param levels Decomposition levels (default 1).
 #' @param alpha Threshold decay parameter (Eq 9).
@@ -15,8 +15,8 @@
 #' @param extension Boundary handling ('symmetric', 'periodic', 'zero').
 #' @param update_freq How often to recompute threshold statistics (default 1).
 #'
-#' @return A closure function `processor(new_sample)` that accepts a single
-#' numeric value and returns the filtered value immediately.
+#' @return A closure function \code{processor(new_sample)} that accepts
+#' a single numeric value and returns the filtered value immediately.
 #' @export
 new_wavelet_stream = function(
     scheme,
@@ -36,7 +36,6 @@ new_wavelet_stream = function(
     "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, 1L
   )
 
-  # Create C++ Engine (XPtr)
   engine_ptr = create_engine_cpp(
     scheme$steps,
     as.numeric(scheme$normalization),
@@ -47,7 +46,6 @@ new_wavelet_stream = function(
 
   step_iter = 0
 
-  # R Wrapper Closure
   processor = function(new_sample) {
     if (length(new_sample) != 1) {
       stop("Stream processor accepts only one sample at a time.")
@@ -78,11 +76,11 @@ new_wavelet_stream = function(
 #' Causal Batch Denoising (Turbo Simulation)
 #'
 #' Processes a complete signal simulating the sequential arrival of data.
-#' Uses the specialized C++ class `WaveletEngine` to perform causal filtering
-#' efficiently on a historical dataset.
+#' Uses the specialized C++ class \code{WaveletEngine} to perform causal
+#' filtering efficiently on a historical dataset.
 #'
 #' @param signal Complete vector of the noisy signal.
-#' @param scheme `lifting_scheme` object.
+#' @param scheme \code{lifting_scheme} object.
 #' @param levels Decomposition levels.
 #' @param window_size Window size.
 #' @param alpha Threshold decay parameter (Eq 9).

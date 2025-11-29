@@ -14,7 +14,8 @@ compute_adaptive_threshold(lwt_obj, alpha = 0.3, beta = 1.2)
 \item{beta}{Initial threshold scale factor (Eq. 9).}
 }
 \value{
-List of thresholds for each decomposition level (d1, d2...).
+List of thresholds for each decomposition level
+(\code{d1}, \code{d2}...).
 }
 \description{
 Estimates the optimal noise threshold based on current window statistics.

@@ -1,7 +1,7 @@
 #' Generate standard signals for wavelet testing (Donoho-Johnstone Benchmark)
 #'
 #' Creates synthetic classic signals used for wavelet validation.
-#' Formulas are based on Donoho & Johnstone and Liu et al.
+#' Formulas are based on Donoho and Johnstone and Liu et al.
 #'
 #' @param type Signal type: "const", "ramp", "poly2", "poly3", "random",
 #'             "impulse", "sine", "doppler", "heavisine", "bumps".
@@ -54,7 +54,7 @@
 #'
 #' Verifies wavelet invertibility against a battery of signals.
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #' @param tol Numerical error tolerance (default 1e-9).
 #'
 #' @return List with global status and maximum error found.
@@ -99,7 +99,7 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-9) {
 #'
 #' Verifies if the wavelet cancels polynomials of a specific degree.
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #' @param degree Polynomial degree (0=Constant, 1=Ramp, 2=Parabola...).
 #' @param tol Residual energy tolerance (default 1e-9).
 #'
@@ -137,7 +137,7 @@ validate_vanishing_moments = function(scheme, degree = 0, tol = 1e-9) {
 #'
 #' Verifies Parseval's Theorem. Only applicable for orthogonal wavelets.
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #' @param expected Boolean. If TRUE, expects orthogonality.
 #' @param tol Tolerance (default 1e-9).
 #'
@@ -171,7 +171,7 @@ validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-9) {
 #'
 #' Verifies if the impulse response is finite (FIR Filter).
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #' @param max_width Maximum expected width (number of taps).
 #'
 #' @return List with status and number of active taps.
@@ -208,7 +208,7 @@ validate_compact_support = function(scheme, max_width) {
 #' This test quantifies the variation in detail energy when
 #' shifting the input signal by 1 sample.
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #'
 #' @return List with status and percentage variation.
 #' @export
@@ -243,7 +243,7 @@ validate_shift_sensitivity = function(scheme) {
 #'
 #' Plots the waveform by iterating the reconstruction over several levels.
 #'
-#' @param scheme Object of class `lifting_scheme`.
+#' @param scheme Object of class \code{lifting_scheme}.
 #' @param plot Boolean.
 #' @param levels Number of cascade levels.
 #'
@@ -293,11 +293,14 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
 #'
 #' Runs a battery of physical and mathematical tests on a wavelet.
 #'
-#' @param wavelet_name Name string or a `lifting_scheme` object.
+#' @param wavelet_name Name string or a \code{lifting_scheme} object.
 #' @param config Configuration list (is_ortho, vm_degrees, max_taps).
 #' @param verbose Print results to console?
 #'
-#' @return (Invisible) A list containing the results of each test.
+#' @return (Invisible) A list containing the results of each test
+#' (Perfect Reconstruction, Orthogonality, etc).
+#' Each item contains: \code{passed} (TRUE/FALSE),
+#' \code{metric} (numeric), and \code{msg}.
 #' @export
 diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
 
@@ -311,7 +314,7 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
   if (is.null(sch)) stop("Invalid Wavelet.")
 
   if (verbose) {
-    cat(sprintf("DIAGNOSIS: %s \n", toupper(wavelet_name)))
+    cat(sprintf("\n=== DIAGNOSIS: %s ===\n", toupper(wavelet_name)))
   }
 
   tests = list()

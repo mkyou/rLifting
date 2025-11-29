@@ -7,7 +7,7 @@
 \method{print}{lifting_scheme}(x, ...)
 }
 \arguments{
-\item{x}{lifting_scheme object.}
+\item{x}{object of class \code{lifting_scheme}.}
 
 \item{...}{additional arguments.}
 }

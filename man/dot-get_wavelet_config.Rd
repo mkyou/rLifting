@@ -2,11 +2,11 @@
 % Please edit documentation in R/lifting_scheme.R
 \name{.get_wavelet_config}
 \alias{.get_wavelet_config}
-\title{Implements factorizations based on Daubechies & Sweldens (1998).}
+\title{Implements factorizations based on Daubechies and Sweldens (1998).}
 \usage{
 .get_wavelet_config(name)
 }
 \description{
-Implements factorizations based on Daubechies & Sweldens (1998).
+Implements factorizations based on Daubechies and Sweldens (1998).
 }
 \keyword{internal}

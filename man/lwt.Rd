@@ -17,9 +17,9 @@ lwt(signal, scheme, levels = 1, extension = "symmetric")
 "periodic", or "zero".}
 }
 \value{
-An object of class 'lwt' containing:
-\item{coeffs}{List of details (d1..dn) and approximation (an).}
-\item{scheme}{The scheme used.}
+An object of class 'lwt'. It is a list containing
+'coeffs' (list of details d1..dn and approximation an) and
+'scheme' (the scheme object used).
 }
 \description{
 Performs the Forward Wavelet Transform using the Lifting Scheme.

@@ -7,8 +7,8 @@
 lifting_scheme(wavelet = "haar", custom_steps = NULL, custom_norm = NULL)
 }
 \arguments{
-\item{wavelet}{Wavelet name (string).
-Options: "haar", "db2", "cdf53", "cdf97", "dd4", "lazy".}
+\item{wavelet}{Wavelet name (string). Options:
+"haar", "db2", "cdf53", "cdf97", "dd4", "lazy".}
 
 \item{custom_steps}{List of custom steps (optional).
 If provided, ignores internal lookup.}

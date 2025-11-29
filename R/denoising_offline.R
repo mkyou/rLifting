@@ -5,12 +5,12 @@
 #' This function is fully optimized in C++ (Zero-Allocation).
 #'
 #' @param signal Numeric vector containing the complete signal.
-#' @param scheme A `lifting_scheme` object.
+#' @param scheme A \code{lifting_scheme} object.
 #' @param alpha Recursive threshold parameter.
 #' @param beta Threshold scale factor.
 #' @param levels Number of decomposition levels.
-#' @param method Thresholding method ('hard', 'soft', 'semisoft').
-#' @param extension Extension mode ('symmetric', 'periodic', 'zero').
+#' @param method Thresholding method ("hard", "soft", "semisoft").
+#' @param extension Extension mode ("symmetric", "periodic", "zero").
 #'
 #' @return Filtered numeric vector (same length as input).
 #' @export

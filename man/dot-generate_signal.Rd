@@ -17,6 +17,6 @@ Numeric vector.
 }
 \description{
 Creates synthetic classic signals used for wavelet validation.
-Formulas are based on Donoho & Johnstone and Liu et al.
+Formulas are based on Donoho and Johnstone and Liu et al.
 }
 \keyword{internal}

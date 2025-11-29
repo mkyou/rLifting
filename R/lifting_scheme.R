@@ -3,13 +3,13 @@
 #' Creates an S3 object containing the prediction (P) and update (U) steps
 #' required for the Lifting Transform.
 #'
-#' @param wavelet Wavelet name (string).
-#'  Options: "haar", "db2", "cdf53", "cdf97", "dd4", "lazy".
+#' @param wavelet Wavelet name (string). Options:
+#'  "haar", "db2", "cdf53", "cdf97", "dd4", "lazy".
 #' @param custom_steps List of custom steps (optional).
 #'  If provided, ignores internal lookup.
 #' @param custom_norm Normalization vector (optional).
 #'
-#' @return An object of class `lifting_scheme`.
+#' @return An object of class \code{lifting_scheme}.
 #' @export
 lifting_scheme = function(
     wavelet = "haar",
@@ -20,12 +20,10 @@ lifting_scheme = function(
   steps = list()
   norm_factors = c(1, 1)
 
-  # Priority to custom_steps.
   if (!is.null(custom_steps)) {
     steps = custom_steps
     if (!is.null(custom_norm)) norm_factors = custom_norm
   } else {
-    # Load from internal database
     config = .get_wavelet_config(wavelet)
     steps = config$steps
     norm_factors = config$norm
@@ -37,10 +35,9 @@ lifting_scheme = function(
   )
 }
 
-#' Implements factorizations based on Daubechies & Sweldens (1998).
+#' Implements factorizations based on Daubechies and Sweldens (1998).
 #' @keywords internal
 .get_wavelet_config = function(name) {
-  # Baseline
   if (name == "lazy") {
     return(list(steps = list(), norm = c(1, 1)))
   }
@@ -54,7 +51,6 @@ lifting_scheme = function(
     return(list(steps = steps, norm = norm))
   }
 
-  # --- DB2 (D4 - 4 taps) ---
   if (name == "db2") {
     sqrt3 = sqrt(3)
     steps = list(
@@ -69,7 +65,6 @@ lifting_scheme = function(
     return(list(steps = steps, norm = norm))
   }
 
-  # --- CDF 5/3 (LeGall) ---
   if (name == "cdf53" || name == "bior2.2") {
     steps = list(
       list(type = "predict", coeffs = c(0.5, 0.5), start_idx = 0),
@@ -79,7 +74,6 @@ lifting_scheme = function(
     return(list(steps = steps, norm = norm))
   }
 
-  # --- CDF 9/7 (Cohen-Daubechies-Feauveau) ---
   if (name == "cdf97" || name == "bior4.4") {
     alpha = -1.586134342
     beta  = -0.05298011854
@@ -87,8 +81,6 @@ lifting_scheme = function(
     delta = 0.4435068522
     zeta  = 1.149604398
 
-    # Note: signs inverted for Predict steps because the engine performs
-    #   subtraction.
     steps = list(
       list(type = "predict", coeffs = c(-alpha, -alpha), start_idx = 0),
       list(type = "update",  coeffs = c(beta, beta), start_idx = -1),
@@ -99,7 +91,6 @@ lifting_scheme = function(
     return(list(steps = steps, norm = norm))
   }
 
-  # --- DD4 (Interpolating) ---
   if (name == "dd4" || name == "interp4") {
     p_coeffs = c(-1/16, 9/16, 9/16, -1/16)
     u_coeffs = p_coeffs / 2
@@ -116,7 +107,7 @@ lifting_scheme = function(
 }
 
 #' Print method
-#' @param x lifting_scheme object.
+#' @param x object of class \code{lifting_scheme}.
 #' @param ... additional arguments.
 #' @export
 print.lifting_scheme = function(x, ...) {
@@ -134,16 +125,15 @@ print.lifting_scheme = function(x, ...) {
 #'
 #' @param type Step type: "predict" (P) or "update" (U).
 #' @param coeffs Numeric vector containing the filter coefficients.
-#' @param start_idx (Optional) Manual start index.
-#'  If provided, ignores the `position` parameter.
-#'  Use this for fine-grained control.
+#' @param start_idx (Optional) Manual start index. If provided, ignores the
+#'        \code{position} parameter. Use this for fine-grained control.
 #' @param position Automatic index adjustment
-#'  (used only if `start_idx` is NULL):
-#'        \itemize{
-#'          \item "center": Centers the filter (default).
-#'          \item "left": Causal filter (looks into the past).
-#'          \item "right": Anti-causal filter (looks into the future).
-#'        }
+#'  (used only if \code{start_idx} is NULL):
+#' \itemize{
+#'   \item "center": Centers the filter (default).
+#'   \item "left": Causal filter (looks into the past).
+#'   \item "right": Anti-causal filter (looks into the future).
+#' }
 #'
 #' @return A list formatted for the internal lifting engine.
 #' @export
@@ -172,13 +162,13 @@ lift_step = function(
 
 #' Create a custom wavelet
 #'
-#' Wrapper to create a `lifting_scheme` object from manual steps.
+#' Wrapper to create a \code{lifting_scheme} object from manual steps.
 #'
 #' @param name Identifier name for the wavelet.
 #' @param steps List of steps created via \code{lift_step}.
 #' @param norm Normalization vector c(K, 1/K).
 #'
-#' @return An object of class `lifting_scheme`.
+#' @return An object of class \code{lifting_scheme}.
 #' @export
 #' @examples
 #' p1 = lift_step("predict", c(1), position="center")
