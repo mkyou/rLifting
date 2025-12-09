@@ -13,6 +13,9 @@ visualize_wavelet_basis(scheme, plot = TRUE, levels = 8)
 
 \item{levels}{Number of cascade levels.}
 }
+\value{
+Invisibly returns \code{NULL}. Called for side effects (plotting).
+}
 \description{
 Plots the waveform by iterating the reconstruction over several levels.
 }

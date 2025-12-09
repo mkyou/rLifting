@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments.}
 }
+\value{
+Invisibly returns \code{NULL}. Called for side effects (printing).
+}
 \description{
 Print method for LWT
 }

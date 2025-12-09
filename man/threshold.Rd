@@ -13,6 +13,9 @@ threshold(x, lambda, method = "soft")
 
 \item{method}{Method: "hard", "soft" or "semisoft".}
 }
+\value{
+Numeric vector of the same length as \code{x} with thresholded coefficients.
+}
 \description{
 General Thresholding Wrapper
 }

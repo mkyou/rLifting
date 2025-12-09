@@ -23,7 +23,7 @@ An object of class 'lwt'. It is a list containing
 }
 \description{
 Performs the Forward Wavelet Transform using the Lifting Scheme.
-Optimized with C++ backend.
+Optimized with 'C++' backend.
 }
 \examples{
 data = c(1, 2, 3, 4, 5, 6, 7, 8)

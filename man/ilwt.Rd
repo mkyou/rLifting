@@ -2,7 +2,7 @@
 % Please edit documentation in R/ilwt.R
 \name{ilwt}
 \alias{ilwt}
-\title{Inverse Lifting Wavelet Transform (C++ Accelerated)}
+\title{Inverse Lifting Wavelet Transform ('C++' Accelerated)}
 \usage{
 ilwt(lwt_obj, scheme = NULL)
 }
@@ -17,7 +17,7 @@ Numeric vector containing the reconstructed signal.
 }
 \description{
 Reconstructs the original signal from wavelet coefficients.
-Optimized with C++ backend.
+Optimized with 'C++' backend.
 }
 \examples{
 s = c(1, 2, 3, 4)

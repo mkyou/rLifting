@@ -35,5 +35,5 @@ Filtered numeric vector (same length as input).
 \description{
 Performs denoising on the entire signal at once using a non-causal approach.
 Uses global statistics for recursive threshold calculation (Eq. 9).
-This function is fully optimized in C++ (Zero-Allocation).
+This function is fully optimized in 'C++' (Zero-Allocation).
 }

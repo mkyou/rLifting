@@ -20,5 +20,5 @@ List of thresholds for each decomposition level
 \description{
 Estimates the optimal noise threshold based on current window statistics.
 Implements the recursive formula from Liu et al. (2014).
-Accelerated with C++.
+Accelerated with 'C++'.
 }

@@ -40,6 +40,6 @@ Filtered vector (same length as input).
 }
 \description{
 Processes a complete signal simulating the sequential arrival of data.
-Uses the specialized C++ class \code{WaveletEngine} to perform causal
+Uses the specialized 'C++' class \code{WaveletEngine} to perform causal
 filtering efficiently on a historical dataset.
 }

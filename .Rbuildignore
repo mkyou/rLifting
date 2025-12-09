@@ -7,4 +7,5 @@
 ^inst/scripts/benchmark_batch_simulation\.R$
 ^inst/scripts/denoising_performance\.R$
 ^.gitignore$
-^cran-comments\.md$
+^cran-comments\\.md$
+^\\.vscode$

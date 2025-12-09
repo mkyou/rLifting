@@ -2,7 +2,7 @@
 % Please edit documentation in R/realtime_denoising.R
 \name{new_wavelet_stream}
 \alias{new_wavelet_stream}
-\title{Create an Adaptive Wavelet Stream Processor (C++ Core)}
+\title{Create an Adaptive Wavelet Stream Processor ('C++' Core)}
 \usage{
 new_wavelet_stream(
   scheme,
@@ -37,7 +37,7 @@ A closure function \code{processor(new_sample)} that accepts
 a single numeric value and returns the filtered value immediately.
 }
 \description{
-Generates a stateful function backed by a high-performance C++
+Generates a stateful function backed by a high-performance 'C++'
 Ring Buffer engine.
 It implements Sliding Window + Lifting Decomposition +
 Adaptive Thresholding
