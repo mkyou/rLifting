@@ -1,7 +1,7 @@
-#' Inverse Lifting Wavelet Transform (C++ Accelerated)
+#' Inverse Lifting Wavelet Transform ('C++' Accelerated)
 #'
 #' Reconstructs the original signal from wavelet coefficients.
-#' Optimized with C++ backend.
+#' Optimized with 'C++' backend.
 #'
 #' @param lwt_obj Object of class 'lwt' returned by `lwt()`.
 #' @param scheme (Optional) `lifting_scheme` object.

@@ -1,6 +1,6 @@
-#' Create an Adaptive Wavelet Stream Processor (C++ Core)
+#' Create an Adaptive Wavelet Stream Processor ('C++' Core)
 #'
-#' Generates a stateful function backed by a high-performance C++
+#' Generates a stateful function backed by a high-performance 'C++'
 #' Ring Buffer engine.
 #' It implements Sliding Window + Lifting Decomposition +
 #'  Adaptive Thresholding
@@ -76,7 +76,7 @@ new_wavelet_stream = function(
 #' Causal Batch Denoising (Turbo Simulation)
 #'
 #' Processes a complete signal simulating the sequential arrival of data.
-#' Uses the specialized C++ class \code{WaveletEngine} to perform causal
+#' Uses the specialized 'C++' class \code{WaveletEngine} to perform causal
 #' filtering efficiently on a historical dataset.
 #'
 #' @param signal Complete vector of the noisy signal.

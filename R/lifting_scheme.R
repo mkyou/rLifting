@@ -109,6 +109,7 @@ lifting_scheme = function(
 #' Print method
 #' @param x object of class \code{lifting_scheme}.
 #' @param ... additional arguments.
+#' @return Invisibly returns \code{NULL}. Called for side effects (printing).
 #' @export
 print.lifting_scheme = function(x, ...) {
   cat(sprintf("Lifting Scheme: %s\n", x$wavelet))

@@ -247,6 +247,7 @@ validate_shift_sensitivity = function(scheme) {
 #' @param plot Boolean.
 #' @param levels Number of cascade levels.
 #'
+#' @return Invisibly returns \code{NULL}. Called for side effects (plotting).
 #' @export
 visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   n = 2^levels
@@ -278,6 +279,8 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   phi = ilwt(lwt_phi)
 
   if (plot) {
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
     par(mfrow = c(1, 2))
     ts.plot(phi, main = paste("Scaling (Phi):", scheme$wavelet),
             ylab = "Amp", col = "blue", lwd = 1.5)
@@ -285,7 +288,6 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
     ts.plot(psi, main = paste("Wavelet (Psi):", scheme$wavelet),
             ylab = "Amp", col = "red", lwd = 1.5)
     grid()
-    par(mfrow = c(1, 1))
   }
 }
 

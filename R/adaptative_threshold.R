@@ -2,7 +2,7 @@
 #'
 #' Estimates the optimal noise threshold based on current window statistics.
 #' Implements the recursive formula from Liu et al. (2014).
-#' Accelerated with C++.
+#' Accelerated with 'C++'.
 #'
 #' @param lwt_obj Object returned by \code{lwt()}.
 #' @param alpha Recursive adjustment parameter (Eq. 9).

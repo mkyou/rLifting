@@ -48,6 +48,8 @@ threshold_semisoft = function(x, lambda) {
 #' @param x Input vector.
 #' @param lambda Threshold value.
 #' @param method Method: "hard", "soft" or "semisoft".
+#'
+#' @return Numeric vector of the same length as \code{x} with thresholded coefficients.
 #' @export
 threshold = function(x, lambda, method = "soft") {
   switch(

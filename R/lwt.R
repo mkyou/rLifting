@@ -1,7 +1,7 @@
 #' Lifting Wavelet Transform (Forward)
 #'
 #' Performs the Forward Wavelet Transform using the Lifting Scheme.
-#' Optimized with C++ backend.
+#' Optimized with 'C++' backend.
 #'
 #' @param signal Numeric vector containing the input signal.
 #' @param scheme A \code{lifting_scheme} object.
@@ -66,6 +66,7 @@ lwt = function(signal, scheme, levels = 1, extension = "symmetric") {
 #' Print method for LWT
 #' @param x An object of class lwt.
 #' @param ... Additional arguments.
+#' @return Invisibly returns \code{NULL}. Called for side effects (printing).
 #' @export
 print.lwt = function(x, ...) {
   cat("--- LWT Decomposition (C++ Accelerated) ---\n")
