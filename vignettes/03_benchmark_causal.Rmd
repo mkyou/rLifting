@@ -1,0 +1,63 @@
+---
+title: "3. Causal decomposition: the rlifting advantage"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{3. Causal decomposition: the rlifting advantage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Most wavelet packages in R are designed for **offline analysis**: they assume the entire signal is available at once. To perform "causal" filtering (where time $t$ depends only on $0 \dots t$) with these packages, one must implement a **sliding window** loop, re-calculating the transform for every new point.
+
+This approach is $O(N \cdot W)$ (where $W$ is the window size).
+
+`rLifting`, in contrast, implements a specialized **causal mode** using a ring buffer architecture, which updates the transform state in $O(N)$ (amortized $O(1)$ per point).
+
+## 1. Speed comparison: optimized vs. naive
+
+We compare `rLifting::denoise_signal_causal` against a naive sliding-window implementation using `wavethresh`.
+
+```{r causal_speed}
+data("benchmark_causal", package = "rLifting")
+
+# Data is a list
+time_rl <- benchmark_causal$rLifting_Time_Avg
+time_naive <- benchmark_causal$Wavethresh_Naive_Time
+speedup <- benchmark_causal$Speedup_Factor
+
+df_causal <- data.frame(
+  Method = c("rLifting (Optimized)", "Naive Loop (Others)"),
+  Time = c(time_rl, time_naive)
+)
+
+knitr::kable(df_causal, caption = "Execution Time for Causal Processing")
+```
+
+**Speedup Factor:** `r round(speedup, 1)`x.
+
+The massive difference confirms that using standard packages for real-time sliding window analysis is computationally infeasible for high-frequency data.
+
+## 2. Zero-leakage (impulse response)
+
+A true causal filter must have **zero lookahead**. This means an impulse at time $t$ must NOT affect the output at any time $t' < t$.
+
+We verify this by analyzing the **impulse response**.
+
+```{r leakage}
+library(ggplot2)
+data("leakage_results", package = "rLifting")
+
+knitr::kable(leakage_results, caption = "Pre-Trigger Energy (Data Leakage)")
+```
+
+- **Offline mode:** The energy leaks into the past (Pre-Trigger Energy > 0). The filter "sees" the impulse coming and reacts before it happens.
+- **Causal mode:** The Pre-Trigger Energy is exactly 0. The filter only reacts *after* or *at* the moment the impulse occurs.
+
+This property is critical for financial backtesting (avoiding look-ahead bias) and real-time control systems.

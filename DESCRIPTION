@@ -31,5 +31,11 @@ Suggests:
     tidyr,
     microbenchmark,
     wavethresh,
-    wavelets
+    wavelets,
+    adlift,
+    waveslim,
+    nlt,
+    CNLTreg
 Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)

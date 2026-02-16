@@ -1,0 +1,82 @@
+---
+title: "2. Benchmark: speed and reconstruction accuracy"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{2. Benchmark: speed and reconstruction accuracy}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette compares `rLifting` against established R packages (`wavethresh`, `wavelets`, `adlift`, `waveslim`, `nlt`, `CNLTreg`) in terms of **execution speed** and **reconstruction accuracy (MSE)**.
+
+We focus on the standard **offline denoising** task using the **Haar wavelet**.
+
+## Data source
+
+The results below are pre-computed using `microbenchmark` to ensure consistency.
+The raw data is available in `data(benchmark_offline)`.
+
+```{r setup}
+library(rLifting)
+library(ggplot2)
+library(dplyr)
+
+data("benchmark_offline", package = "rLifting")
+
+head(benchmark_offline)
+```
+
+## 1. Execution speed
+
+`rLifting` leverages a zero-allocation C++ core (via Rcpp), while many legacy packages rely on interpreted R code or older C interfaces.
+
+```{r speed_plot}
+# Calculate mean execution time
+df_speed <- benchmark_offline %>%
+  group_by(Pkg) %>%
+  summarise(
+    Mean_Time_s = mean(Time),
+    Speedup = max(Mean_Time_s) / Mean_Time_s
+  )
+
+ggplot(df_speed, aes(x = reorder(Pkg, -Mean_Time_s), y = Mean_Time_s, fill = Pkg)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(
+    title = "Execution Time (Lower is Better)",
+    subtitle = "Denoising 1024 points (Haar, max levels) vs others",
+    y = "Seconds",
+    x = "Package"
+  ) +
+  theme_minimal()
+```
+
+The speed advantage of `rLifting` is often an order of magnitude, making it suitable for high-throughput pipelines.
+
+## 2. Reconstruction accuracy (MSE)
+
+Speed means nothing without accuracy. Here we compare the Mean Squared Error (MSE) of the denoised signal against the ground truth.
+
+```{r mse_plot}
+# Filter out packages where MSE wasn't calculated (e.g. pure transform benchmarks)
+df_mse <- benchmark_offline %>%
+  filter(!is.na(MSE))
+
+ggplot(df_mse, aes(x = Pkg, y = MSE, fill = Pkg)) +
+  geom_boxplot() +
+  labs(
+    title = "Reconstruction Error (MSE) - Lower is Better",
+    subtitle = "Denoising Doppler Signal (SNR ~ 3dB)",
+    y = "MSE"
+  ) +
+  theme_minimal()
+```
+
+`rLifting` achieves comparable or superior accuracy to established packages, validating the correctness of its Lifting Scheme implementation.

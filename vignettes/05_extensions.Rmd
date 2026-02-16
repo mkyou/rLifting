@@ -1,0 +1,85 @@
+---
+title: "5. Extensions: custom wavelets"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{5. Extensions: custom wavelets}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+One of the strengths of the Lifting Scheme is its modularity. Unlike standard convolution-based wavelets, Lifting allows you to construct wavelets by composing simple **predict (P)** and **update (U)** steps.
+
+`rLifting` allows advanced users to define custom wavelets.
+
+## Defining a custom wavelet
+
+A wavelet is defined by a sequence of steps and a normalization factor.
+Let's recreate the **linear (Bernstein)** wavelet manually.
+
+```{r custom}
+library(rLifting)
+
+# Step 1: Predict (P)
+# Predicts odd samples from even samples using linear interpolation
+# coeffs = c(-0.5, -0.5) implies: d[i] -= 0.5*s[i] + 0.5*s[i+1]
+p_step <- lift_step(
+  type = "predict", 
+  coeffs = c(-0.5, -0.5), 
+  position = "center"
+)
+
+# Step 2: Update (U)
+# Updates even samples to preserve the average
+# coeffs = c(0.25, 0.25) implies: s[i] += 0.25*d[i-1] + 0.25*d[i]
+u_step <- lift_step(
+  type = "update", 
+  coeffs = c(0.25, 0.25), 
+  position = "center"
+)
+
+# Construct the Scheme
+my_linear_wavelet <- custom_wavelet(
+  name = "LinearManual",
+  steps = list(p_step, u_step),
+  norm = c(sqrt(2), 1/sqrt(2)) # Standard biorthogonal normalization
+)
+
+print(my_linear_wavelet)
+```
+
+## Using the custom wavelet
+
+Once defined, this custom wavelet can be used in any `rLifting` function (offline or online).
+
+```{r usage}
+# Test signal
+x <- 1:16
+
+# Forward Transform
+fwd <- lwt(x, my_linear_wavelet, levels = floor(log2(length(x))))
+print(fwd$coeffs$d1) # Should be zero for a linear signal!
+
+# Inverse Transform
+rec <- ilwt(fwd)
+all.equal(x, rec)
+```
+
+## Diagnosing the custom wavelet
+
+You can use the `diagnose_wavelet` tool to verify the properties of your new creation.
+
+```{r diagnosis}
+# Check for Vanishing Moments (Order 2 = Linear)
+diagnose_wavelet(
+  my_linear_wavelet, 
+  config = list(is_ortho = FALSE, vm_degrees = c(0, 1), max_taps = 5),
+  plot = FALSE
+)
+```

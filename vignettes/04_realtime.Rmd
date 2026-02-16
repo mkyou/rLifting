@@ -1,0 +1,108 @@
+---
+title: "4. Real-time signal smoothing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{4. Real-time signal smoothing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette demonstrates the **real-time** capabilities of `rLifting`.
+We simulate a high-frequency data stream (e.g., from a sensor) and process it point-by-point.
+
+## Simulation setup
+
+We generate a noisy sine wave to simulate a continuous signal.
+
+```{r setup}
+library(rLifting)
+library(ggplot2)
+
+# Simulate 1000 data points
+set.seed(42)
+n <- 1000
+t <- seq(0, 10*pi, length.out = n)
+clean <- sin(t)
+noisy <- clean + rnorm(n, sd = 0.5)
+
+# Initialize the stream processor
+# Uses a sliding window of 128 points
+# Algorithm: Haar wavelet (Level 3)
+stream_proc <- new_wavelet_stream(
+  scheme = lifting_scheme("haar"),
+  window_size = 128,
+  levels = floor(log2(128)),
+  method = "soft",
+  alpha = 0.5, # Slightly more aggressive smoothing
+  beta = 1.0
+)
+```
+
+## Processing loop
+
+In a real application, this loop would be replaced by an event listener (WebSocket, MQTT, Serial Port).
+Here, we iterate over the vector.
+
+```{r loop}
+output <- numeric(n)
+process_time <- numeric(n)
+
+for (i in 1:n) {
+  # Measure time per sample
+  start <- Sys.time()
+  
+  # Feed one sample, get one denoised sample
+  output[i] <- stream_proc(noisy[i])
+  
+  end <- Sys.time()
+  process_time[i] <- as.numeric(end - start)
+}
+
+# The first 'window_size' samples are returned raw (warm-up)
+# Let's inspect the results
+df <- data.frame(
+  Time = 1:n,
+  Noisy = noisy,
+  Clean = output,
+  Truth = clean
+)
+```
+
+## Latency analysis
+
+Because the core engine is written in zero-allocation C++, the per-sample overhead is extremely low.
+
+```{r latency}
+# Average latency in microseconds
+avg_latency_us <- mean(process_time) * 1e6
+cat(sprintf("Average Latency per Sample: %.2f microseconds\n", avg_latency_us))
+
+# Plot latency distribution (excluding first compilation hit)
+hist(process_time[-1] * 1e6, 
+     main = "Processing Latency per Point", 
+     xlab = "Microseconds", 
+     col = "steelblue", 
+     breaks = 30)
+```
+
+## Visualizing the result
+
+```{r plot}
+# Visualize a segment after warm-up
+ggplot(subset(df, Time > 200 & Time < 600), aes(x = Time)) +
+  geom_line(aes(y = Noisy), color = "grey80") +
+  geom_line(aes(y = Truth, color = "Truth"), linetype = "dashed") +
+  geom_line(aes(y = Clean, color = "Real-Time Filter"), linewidth = 1) +
+  scale_color_manual(values = c("Truth" = "black", "Real-Time Filter" = "red")) +
+  theme_minimal() +
+  labs(title = "Real-Time Smoothing of Noisy Sine Wave")
+```
+
+The filter successfully recovers the sine wave shape from the noise, with a minimal phase delay inherent to causal processing.

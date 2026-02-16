@@ -13,3 +13,4 @@ src-x64
 *.tar.gz
 rLifting.Rcheck/
 vignettes/*.html
+docs

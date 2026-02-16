@@ -1,0 +1,142 @@
+---
+title: "1. Introduction: Offline, Causal, and Online Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{1. Introduction: Offline, Causal, and Online Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The `rLifting` package provides a unified high-performance framework for Wavelet Lifting Transforms in R. Uniquely, it bridges the gap between traditional **offline statistical analysis** and **real-time signal processing**.
+
+This vignette demonstrates the three core modes of operation using a Doppler signal:
+
+1.  **Offline (Batch):** global denoising using future information.
+2.  **Causal (Batch):** batched processing that respects time causality (no lookahead).
+3.  **Online (Stream):** point-by-point processing for real-time applications.
+
+## Setup and Data
+
+We use the `doppler_example` dataset included in the package.
+
+```{r setup}
+library(rLifting)
+library(ggplot2)
+
+# Load example data (Doppler signal with Gaussian noise)
+data("doppler_example", package = "rLifting")
+
+head(doppler_example)
+```
+
+## 1. Offline Denoising (Global)
+
+In **Offline** mode, the algorithm has access to the entire signal (past and future). This allows it to compute global thresholding statistics and perform non-causal lifting steps, resulting in the smoothest possible reconstruction.
+
+**Use case:** Historical data analysis, post-processing.
+
+```{r offline}
+# Define the wavelet scheme (Haar in this example)
+scheme <- lifting_scheme("haar")
+
+# Perform Global Denoising
+# Extension="symmetric" is standard to reduce boundary artifacts.
+offline_clean <- denoise_signal_offline(
+  doppler_example$noisy,
+  scheme,
+  levels = 3, # You can choose the analysis resolution level
+  method = "semisoft",
+  extension = "symmetric"
+)
+
+# Plot
+df_plot <- doppler_example
+df_plot$Offline <- offline_clean
+
+ggplot(df_plot, aes(x = index)) +
+  geom_line(aes(y = noisy), color = "grey80") +
+  geom_line(aes(y = original, color = "Truth"), linewidth = 0.8) +
+  geom_line(aes(y = Offline, color = "Offline"), linewidth = 0.8) +
+  scale_color_manual(values = c("Truth" = "black", "Offline" = "blue")) +
+  theme_minimal() +
+  labs(title = "Offline Denoising", y = "Amplitude")
+```
+
+## 2. Causal Denoising (Batch)
+
+In **Causal** mode, we process the history as if we were receiving it sequentially. The estimate at time $t$ depends *only* on $x_1, \dots, x_t$. We use a sliding window of size $W$ to calculate local statistics (see Liu et al 2014).
+
+**Use case:** Backtesting trading strategies, simulating real-time systems on historical data.
+
+```{r causal}
+# Causal Denoising
+# window_size = 256 means the transform considers only the last 256 points at each step.
+causal_clean <- denoise_signal_causal(
+  doppler_example$noisy,
+  scheme,
+  window_size = 256,
+  levels = 3,
+  method = "semisoft",
+  extension = "symmetric"
+)
+
+df_plot$Causal <- causal_clean
+
+# Notice the "Warm-up" phase at the beginning where the signal is 0 or raw
+ggplot(df_plot, aes(x = index)) +
+  geom_line(aes(y = original, color = "Truth"), alpha = 0.5) +
+  geom_line(aes(y = Causal, color = "Causal"), linewidth = 0.8) +
+  scale_color_manual(values = c("Truth" = "black", "Causal" = "red")) +
+  theme_minimal() +
+  labs(title = "Causal Denoising (Simulated Real-Time)", y = "Amplitude")
+```
+
+## 3. Online Denoising (Stream)
+
+**Online** mode allows you to process data point-by-point as it arrives from a sensor or API. It uses a `C++` Ring Buffer to maintain the sliding window state efficiently ($O(1)$ per update).
+
+**Use case:** IoT sensors, live financial feeds, monitoring systems.
+
+```{r stream}
+# 1. Initialize the stream processor
+processor <- new_wavelet_stream(
+  scheme,
+  window_size = 256,
+  levels = 3,
+  method = "semisoft",
+  extension = "symmetric"
+)
+
+# 2. Simulate a stream loop
+stream_output <- numeric(nrow(doppler_example))
+
+# In a real app, this loop would be receiving data from a socket/API
+for (i in 1:nrow(doppler_example)) {
+  new_point <- doppler_example$noisy[i] 
+  stream_output[i] <- processor(new_point)
+}
+
+# Verify that Stream output matches Causal Batch output
+all.equal(stream_output, causal_clean, tolerance = 1e-10)
+```
+
+## Comparison
+
+Combining all three views illustrates the trade-off. The **Offline** method provides better smoothing (lower variance) because it "sees the future". The **Causal/Online** methods are reactive but naturally exhibit a slight phase lag.
+
+```{r comparison}
+ggplot(df_plot, aes(x = index)) +
+  geom_line(aes(y = Offline, color = "Offline"), alpha = 0.8) +
+  geom_line(aes(y = Causal, color = "Causal"), alpha = 0.8) +
+  scale_color_manual(values = c("Offline" = "blue", "Causal" = "red")) +
+  theme_minimal() +
+  labs(title = "Trade-off: Smoothness vs. Causality") +
+  coord_cartesian(xlim = c(500, 1000)) # Zoom in without dropping data
+```
