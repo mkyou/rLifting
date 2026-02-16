@@ -291,20 +291,38 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   }
 }
 
+#' Print method for Wavelet Diagnosis
+#'
+#' @param x Object of class \code{wavelet_diagnosis}.
+#' @param ... Additional arguments.
+#' @return Invisibly returns \code{x}.
+#' @export
+print.wavelet_diagnosis = function(x, ...) {
+  cat(sprintf("\n=== DIAGNOSIS: %s ===\n", toupper(attr(x, "wavelet"))))
+  
+  for (res in x) {
+    status = if (res$passed) "[PASS]" else "[FAIL]"
+    # Special handling for informational tests
+    if (grepl("Sensitivity", res$name)) status = "[INFO]"
+    
+    cat(sprintf("%-6s %-35s | %s\n", status, res$name, res$msg))
+  }
+  invisible(x)
+}
+
 #' Complete Wavelet Diagnosis
 #'
 #' Runs a battery of physical and mathematical tests on a wavelet.
 #'
 #' @param wavelet_name Name string or a \code{lifting_scheme} object.
 #' @param config Configuration list (is_ortho, vm_degrees, max_taps).
-#' @param verbose Print results to console?
+#' @param verbose Print results to console handling? (Defaults to TRUE).
+#' @param plot Boolean. Visualize basis functions during diagnosis? (Defaults to TRUE).
 #'
-#' @return (Invisible) A list containing the results of each test
-#' (Perfect Reconstruction, Orthogonality, etc).
-#' Each item contains: \code{passed} (TRUE/FALSE),
-#' \code{metric} (numeric), and \code{msg}.
+#' @return An object of class \code{wavelet_diagnosis} (S3), which is a list containing 
+#' the results of each test. The object has a dedicated \code{print} method.
 #' @export
-diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
+diagnose_wavelet = function(wavelet_name, config, verbose = TRUE, plot = TRUE) {
 
   if (is.character(wavelet_name)) {
     sch = tryCatch(lifting_scheme(wavelet_name), error = function(e) NULL)
@@ -314,10 +332,6 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
   }
 
   if (is.null(sch)) stop("Invalid Wavelet.")
-
-  if (verbose) {
-    cat(sprintf("\n=== DIAGNOSIS: %s ===\n", toupper(wavelet_name)))
-  }
 
   tests = list()
   tests[[1]] = validate_perfect_reconstruction(sch)
@@ -334,18 +348,18 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
 
   tests[[length(tests) + 1]] = validate_shift_sensitivity(sch)
 
-  if (verbose) {
-    cat("Generating basis visualization (check plot window)...\n")
+  # Attach attributes for the S3 class
+  class(tests) = "wavelet_diagnosis"
+  attr(tests, "wavelet") = wavelet_name
+
+  if (plot) {
+    if (verbose) message("Generating basis visualization...")
     try(visualize_wavelet_basis(sch, plot = TRUE))
   }
 
   if (verbose) {
-    for (res in tests) {
-      status = if (res$passed) "[PASS]" else "[FAIL]"
-      if (res$name == "Shift Sensitivity") status = "[INFO]"
-
-      cat(sprintf("%-6s %-35s | %s\n", status, res$name, res$msg))
-    }
+    print(tests)
   }
+  
   invisible(tests)
 }

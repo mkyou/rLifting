@@ -70,7 +70,32 @@ new_wavelet_stream = function(
     return(res)
   }
 
+  # Assign S3 class and attributes
+  class(processor) = c("wavelet_stream", "function")
+  attr(processor, "config") = list(
+    wavelet = scheme$wavelet,
+    window_size = window_size,
+    levels = levels,
+    method = method
+  )
+
   return(processor)
+}
+
+#' Print method for Wavelet Stream Processor
+#'
+#' @param x Object of class \code{wavelet_stream}.
+#' @param ... Additional arguments.
+#' @return Invisibly returns \code{x}.
+#' @export
+print.wavelet_stream = function(x, ...) {
+  cfg = attr(x, "config")
+  cat("--- Wavelet Stream Processor ---\n")
+  cat(sprintf("Wavelet: %s\n", cfg$wavelet))
+  cat(sprintf("Window:  %d samples\n", cfg$window_size))
+  cat(sprintf("Levels:  %d\n", cfg$levels))
+  cat(sprintf("Method:  %s\n", cfg$method))
+  invisible(x)
 }
 
 #' Causal Batch Denoising (Turbo Simulation)

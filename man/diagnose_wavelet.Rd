@@ -4,20 +4,20 @@
 \alias{diagnose_wavelet}
 \title{Complete Wavelet Diagnosis}
 \usage{
-diagnose_wavelet(wavelet_name, config, verbose = TRUE)
+diagnose_wavelet(wavelet_name, config, verbose = TRUE, plot = TRUE)
 }
 \arguments{
 \item{wavelet_name}{Name string or a \code{lifting_scheme} object.}
 
 \item{config}{Configuration list (is_ortho, vm_degrees, max_taps).}
 
-\item{verbose}{Print results to console?}
+\item{verbose}{Print results to console handling? (Defaults to TRUE).}
+
+\item{plot}{Boolean. Visualize basis functions during diagnosis? (Defaults to TRUE).}
 }
 \value{
-(Invisible) A list containing the results of each test
-(Perfect Reconstruction, Orthogonality, etc).
-Each item contains: \code{passed} (TRUE/FALSE),
-\code{metric} (numeric), and \code{msg}.
+An object of class \code{wavelet_diagnosis} (S3), which is a list containing
+the results of each test. The object has a dedicated \code{print} method.
 }
 \description{
 Runs a battery of physical and mathematical tests on a wavelet.
