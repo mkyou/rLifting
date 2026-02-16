@@ -7,6 +7,10 @@
 ^inst/scripts/benchmark_batch_simulation\.R$
 ^inst/scripts/denoising_performance\.R$
 ^.gitignore$
-^cran-comments\\.md$
-^\\.vscode$
+^cran-comments\.md$
+^\.vscode$
 ^CRAN-SUBMISSION$
+
+^.vscode$
+^.Rproj.user$
+^rLifting.Rproj$
