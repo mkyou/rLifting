@@ -38,7 +38,7 @@ test_that("CDF 9/7 (Cohen-Daubechies-Feauveau) verification", {
   expect_true(validate_perfect_reconstruction(sch)$passed)
 
   # Deve ter 4 momentos nulos (0 a 3)
-  for(d in 0:3) {
+  for (d in 0:3) {
     res = validate_vanishing_moments(sch, degree = d)
     expect_true(res$passed, label = paste("Falha no grau", d, "-", res$msg))
   }

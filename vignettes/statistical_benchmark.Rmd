@@ -52,96 +52,96 @@ library(knitr)
 # Standard visual config
 theme_set(theme_bw() + theme(legend.position = "top"))
 
-cols_mode = c(
-  "Causal" = "firebrick", 
-  "Offline" = "royalblue", 
+cols_mode <- c(
+  "Causal" = "firebrick",
+  "Offline" = "royalblue",
   "Baseline" = "black"
-  )
+)
 
 # Load pre-computed data or run a demo if missing (CRAN compliance)
-result_file = "sim_results_N1000.rds"
+result_file <- "sim_results_N1000.rds"
 
 if (file.exists(result_file)) {
-  df_final = readRDS(result_file)
+  df_final <- readRDS(result_file)
 } else {
   # Fallback simulation for CRAN servers or users without the file.
   warning(
     "Full simulation file (N=1000) not found. Running demo simulation (N=10)."
-    )
-  
+  )
+
   # 1. Light Config
-  N_DEMO = 10 
-  T_PTS = 2048
-  SD_NOISE = 0.2
-  
-  grid_demo = expand.grid(
+  N_DEMO <- 10
+  T_PTS <- 2048
+  SD_NOISE <- 0.2
+
+  grid_demo <- expand.grid(
     Wavelet = c("haar", "db2", "cdf53", "cdf97", "dd4"),
     Mode = c("Offline", "Causal"),
     Method = c("hard", "soft", "semisoft"),
-    Extension = c("symmetric", "periodic"), 
+    Extension = c("symmetric", "periodic"),
     stringsAsFactors = FALSE
   )
-  
-  res_list = list()
-  
+
+  res_list <- list()
+
   # 2. Simplified Loop
   for (tipo in c("bumps", "doppler", "heavisine")) {
-    sinal_puro = rLifting:::.generate_signal(tipo, n = T_PTS)
-    
+    sinal_puro <- rLifting:::.generate_signal(tipo, n = T_PTS)
+
     for (i in 1:N_DEMO) {
-      ruido = rnorm(T_PTS, sd = SD_NOISE)
-      sinal_ruidoso = sinal_puro + ruido
-      
+      ruido <- rnorm(T_PTS, sd = SD_NOISE)
+      sinal_ruidoso <- sinal_puro + ruido
+
       # Baseline
-      m_base = calc_metrics(sinal_puro, sinal_ruidoso)
-      res_list[[length(res_list)+1]] = data.frame(
-        Sinal = tipo, Wavelet = "None", 
+      m_base <- calc_metrics(sinal_puro, sinal_ruidoso)
+      res_list[[length(res_list) + 1]] <- data.frame(
+        Sinal = tipo, Wavelet = "None",
         Mode = "Baseline", Method = "None", Extension = "None",
-        RMSE = m_base["RMSE"], SNR = m_base["SNR"], 
+        RMSE = m_base["RMSE"], SNR = m_base["SNR"],
         MBE = m_base["MBE"]
       )
-      
+
       # Grid
       for (j in 1:nrow(grid_demo)) {
-        p = grid_demo[j, ]
-        sch = lifting_scheme(p$Wavelet)
-        
+        p <- grid_demo[j, ]
+        sch <- lifting_scheme(p$Wavelet)
+
         if (p$Mode == "Offline") {
-          proc = denoise_signal_offline(
-            sinal_ruidoso, sch, 
-            method=p$Method, 
-            extension=p$Extension,
+          proc <- denoise_signal_offline(
+            sinal_ruidoso, sch,
+            method = p$Method,
+            extension = p$Extension,
             levels = 3
-            )
+          )
         } else {
-          proc = denoise_signal_causal(
-            sinal_ruidoso, sch, 
-            window_size=256, method=p$Method, 
-            extension=p$Extension,
+          proc <- denoise_signal_causal(
+            sinal_ruidoso, sch,
+            window_size = 256, method = p$Method,
+            extension = p$Extension,
             levels = 3
-            )
+          )
         }
-        
-        m = calc_metrics(sinal_puro, proc)
-        
-        res_list[[length(res_list)+1]] = data.frame(
-          Sinal = tipo, Wavelet = p$Wavelet, Mode = p$Mode, 
+
+        m <- calc_metrics(sinal_puro, proc)
+
+        res_list[[length(res_list) + 1]] <- data.frame(
+          Sinal = tipo, Wavelet = p$Wavelet, Mode = p$Mode,
           Method = p$Method, Extension = p$Extension,
           RMSE = m["RMSE"], SNR = m["SNR"], MBE = m["MBE"]
         )
       }
     }
   }
-  
+
   # 3. Aggregation
-  df_full = do.call(rbind, res_list)
-  
-  df_final = df_full |>
+  df_full <- do.call(rbind, res_list)
+
+  df_final <- df_full |>
     group_by(Sinal, Wavelet, Mode, Method, Extension) |>
     summarise(
-      RMSE = mean(RMSE), 
-      SNR = mean(SNR), 
-      MBE = mean(MBE), 
+      RMSE = mean(RMSE),
+      SNR = mean(SNR),
+      MBE = mean(MBE),
       .groups = "drop"
     )
 }
@@ -154,16 +154,16 @@ However, the optimized Causal method still offers significant gain over the nois
 
 ```{r}
 # Aggregate by BEST performance per mode
-overview = df_final |>
+overview <- df_final |>
   group_by(Sinal, Mode) |>
   summarise(
     SNR = max(SNR),
     RMSE = min(RMSE),
-    .groups = 'drop'
+    .groups = "drop"
   ) |>
   pivot_longer(
-    cols = c(SNR, RMSE), 
-    names_to = "Metric", 
+    cols = c(SNR, RMSE),
+    names_to = "Metric",
     values_to = "Value"
   )
 
@@ -174,7 +174,7 @@ ggplot(overview, aes(x = Sinal, y = Value, fill = Mode)) +
   labs(
     title = "Peak Performance: SNR vs RMSE",
     subtitle = "Comparison of the best configuration found for each mode",
-    y = NULL, 
+    y = NULL,
     fill = NULL
   ) +
   theme_bw() +
@@ -190,27 +190,27 @@ In our causal simulations, however, we observe an interesting inversion.
 
 ```{r}
 # Prepare long data
-causal_perf = df_final |>
+causal_perf <- df_final |>
   filter(Mode == "Causal", Method == "semisoft", Extension == "symmetric") |>
   select(Sinal, Wavelet, SNR, RMSE) |>
   pivot_longer(c(SNR, RMSE), names_to = "Metric", values_to = "Value")
 
 # Prepare baselines
-baselines = df_final |> 
-  filter(Mode == "Baseline") |> 
-  group_by(Sinal) |> 
+baselines <- df_final |>
+  filter(Mode == "Baseline") |>
+  group_by(Sinal) |>
   summarise(
     SNR = mean(SNR),
     RMSE = mean(RMSE),
-    .groups = 'drop'
+    .groups = "drop"
   ) |>
   pivot_longer(c(SNR, RMSE), names_to = "Metric", values_to = "Base_Val")
 
 ggplot(causal_perf, aes(x = Wavelet, y = Value)) +
   geom_bar(stat = "identity", fill = "royalblue", alpha = 0.8) +
   geom_hline(
-    data = baselines, 
-    aes(yintercept = Base_Val, linetype = "Baseline"), 
+    data = baselines,
+    aes(yintercept = Base_Val, linetype = "Baseline"),
     color = "firebrick",
     linewidth = 0.8
   ) +
@@ -222,7 +222,7 @@ ggplot(causal_perf, aes(x = Wavelet, y = Value)) +
   ) +
   theme_bw() +
   theme(
-    legend.position = "top", 
+    legend.position = "top",
     legend.title = element_blank(),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
@@ -243,7 +243,7 @@ Note that this predominantly occurs with `periodic` extension.
 Wavelets with short filters (`haar`, `db2`) are generally immune to this.
 
 ```{r}
-base_wide = df_final |>
+base_wide <- df_final |>
   filter(Mode == "Baseline") |>
   group_by(Sinal) |>
   summarise(
@@ -251,27 +251,26 @@ base_wide = df_final |>
     Base_RMSE = mean(RMSE)
   )
 
-failures = df_final |>
+failures <- df_final |>
   filter(Mode == "Causal") |>
   left_join(base_wide, by = "Sinal") |>
   mutate(
-    Gain_dB = SNR - Base_SNR, 
-    Gain_RMSE = Base_RMSE - RMSE 
+    Gain_dB = SNR - Base_SNR,
+    Gain_RMSE = Base_RMSE - RMSE
   ) |>
-  filter(Gain_dB < 0) |> 
+  filter(Gain_dB < 0) |>
   select(Sinal, Wavelet, Method, Extension, Gain_dB, Gain_RMSE) |>
   arrange(Gain_dB)
 
-if(nrow(failures) > 0) {
+if (nrow(failures) > 0) {
   knitr::kable(
-    failures, 
+    failures,
     digits = 4,
     caption = "Degradation Cases (SNR < Baseline)"
   )
 } else {
   cat("No method performed worse than baseline on average.")
 }
-
 ```
 
 This behavior reinforces the recommendation to use **symmetric extension** as the safe default for real-time applications in `rLifting`.
@@ -287,7 +286,7 @@ The choice of shrinkage function defines how wavelet coefficients are attenuated
 -   `semisoft` (*Hyperbolic*) seeks a balance.
 
 ```{r plot_thresh, fig.height=4}
-comp_thresh = df_final |>
+comp_thresh <- df_final |>
   filter(Wavelet == "cdf97", Extension == "symmetric")
 
 ggplot(comp_thresh, aes(x = Method, y = SNR)) +
@@ -298,7 +297,7 @@ ggplot(comp_thresh, aes(x = Method, y = SNR)) +
     subtitle = "Consistency between Offline and Causal modes",
     y = "SNR (dB)",
     x = NULL
-    ) +
+  ) +
   theme_bw()
 ```
 

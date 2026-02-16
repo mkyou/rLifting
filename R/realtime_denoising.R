@@ -19,14 +19,14 @@
 #' a single numeric value and returns the filtered value immediately.
 #' @export
 new_wavelet_stream = function(
-    scheme,
-    window_size = 256,
-    levels = 1,
-    alpha = 0.3,
-    beta = 1.2,
-    method = "semisoft",
-    extension = "symmetric",
-    update_freq = 1
+  scheme,
+  window_size = 256,
+  levels = 1,
+  alpha = 0.3,
+  beta = 1.2,
+  method = "semisoft",
+  extension = "symmetric",
+  update_freq = 1
 ) {
 
   if (window_size < 8) stop("window_size must be at least 8.")
@@ -92,15 +92,15 @@ new_wavelet_stream = function(
 #' @return Filtered vector (same length as input).
 #' @export
 denoise_signal_causal = function(
-    signal,
-    scheme,
-    levels = 1,
-    window_size = 256,
-    alpha = 0.3,
-    beta = 1.2,
-    method = "semisoft",
-    extension = "symmetric",
-    update_freq = 1
+  signal,
+  scheme,
+  levels = 1,
+  window_size = 256,
+  alpha = 0.3,
+  beta = 1.2,
+  method = "semisoft",
+  extension = "symmetric",
+  update_freq = 1
 ) {
 
   ext_int = switch(

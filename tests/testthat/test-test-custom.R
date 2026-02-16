@@ -6,8 +6,8 @@ test_that("Custom Wavelet API works", {
   custom_haar = custom_wavelet(
     "ManualHaar",
     list(p1, u1),
-    c(sqrt(2), 1/sqrt(2))
-    )
+    c(sqrt(2), 1 / sqrt(2))
+  )
 
   # Deve ter reconstrucao perfeita
   expect_true(validate_perfect_reconstruction(custom_haar)$passed)
@@ -16,8 +16,8 @@ test_that("Custom Wavelet API works", {
   x = c(1, 2, 3, 4, 5, 6, 7, 8)
   native_haar = lifting_scheme("haar")
 
-  res_custom = lwt(x, custom_haar, levels=1)
-  res_native = lwt(x, native_haar, levels=1)
+  res_custom = lwt(x, custom_haar, levels = 1)
+  res_native = lwt(x, native_haar, levels = 1)
 
   expect_equal(res_custom$coeffs$d1, res_native$coeffs$d1)
   expect_equal(res_custom$coeffs$a1, res_native$coeffs$a1)

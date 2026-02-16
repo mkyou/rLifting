@@ -21,7 +21,7 @@ ilwt = function(lwt_obj, scheme = NULL) {
   if (!inherits(lwt_obj, "lwt")) stop("Input must be an 'lwt' object.")
   if (is.null(scheme)) scheme = lwt_obj$scheme
 
-  ext_mode = if(!is.null(lwt_obj$extension)) lwt_obj$extension else "symmetric"
+  ext_mode = if (!is.null(lwt_obj$extension)) lwt_obj$extension else "symmetric"
   ext_int = switch(
     ext_mode,
     "symmetric" = 1L,

@@ -58,15 +58,15 @@ We will treat a Doppler function with $T=2048$ points contaminated by noise.
 ```{r}
 # Generate synthetic test data
 set.seed(2025)
-n_samples = 2048
-signal_pure = rLifting:::.generate_signal("doppler", n = n_samples)
+n_samples <- 2048
+signal_pure <- rLifting:::.generate_signal("doppler", n = n_samples)
 
 # Add Gaussian noise
-noise = rnorm(n_samples, sd = 0.5)
-signal_noisy = signal_pure + noise
+noise <- rnorm(n_samples, sd = 0.5)
+signal_noisy <- signal_pure + noise
 
 # Prepare DataFrame for ggplot
-df_signal = data.frame(
+df_signal <- data.frame(
   Index = 1:n_samples,
   Original = signal_pure,
   Noisy = signal_noisy
@@ -78,10 +78,10 @@ ggplot(df_signal, aes(x = Index)) +
   geom_line(aes(y = Original, color = "Original"), size = 0.8) +
   scale_color_manual(values = c("Original" = "black", "Noisy" = "grey30")) +
   labs(
-    title = "Doppler Function with Noise", 
-    y = "Amplitude", 
+    title = "Doppler Function with Noise",
+    y = "Amplitude",
     color = "Legend"
-    ) +
+  ) +
   theme_bw() +
   theme(legend.position = "top")
 ```
@@ -98,18 +98,18 @@ While Haar is robust, symmetric extension is generally recommended for smoother 
 
 ```{r}
 # Define Lifting Scheme
-scheme_haar = lifting_scheme("haar")
+scheme_haar <- lifting_scheme("haar")
 
 # Apply Filter
-signal_haar = denoise_signal_offline(
-  signal_noisy, 
+signal_haar <- denoise_signal_offline(
+  signal_noisy,
   scheme = scheme_haar,
   method = "soft", # Thresholding method. Options: "hard", "soft", "semisoft"
   levels = 3,
   extension = "symmetric"
 )
 
-df_signal$Offline = signal_haar
+df_signal$Offline <- signal_haar
 
 ggplot(subset(df_signal, Index >= 500 & Index <= 1000), aes(x = Index)) +
   geom_line(aes(y = Noisy, color = "Noisy"), alpha = 0.5) +
@@ -117,15 +117,15 @@ ggplot(subset(df_signal, Index >= 500 & Index <= 1000), aes(x = Index)) +
   geom_line(aes(y = Offline, color = "Filtered (Haar)"), size = 1) +
   scale_color_manual(
     values = c(
-      "Original" = "black", 
-      "Noisy" = "grey30", 
+      "Original" = "black",
+      "Noisy" = "grey30",
       "Filtered (Haar)" = "royalblue")
-    ) +
+  ) +
   labs(
-    title = "Offline Denoising (Zoom)", 
-    subtitle = "Note the characteristic 'steps' of the Haar wavelet", 
+    title = "Offline Denoising (Zoom)",
+    subtitle = "Note the characteristic 'steps' of the Haar wavelet",
     y = "Amplitude"
-    ) +
+  ) +
   theme_bw() +
   theme(legend.position = "top")
 ```
@@ -143,11 +143,11 @@ This method (as implemented in `rLifting`) introduces two physical phenomena:
 
 ```{r}
 # Window size W
-window_w = 256
+window_w <- 256
 
 # Causal Processing
 # Note: We set levels=3 to match the offline depth.
-signal_causal = denoise_signal_causal(
+signal_causal <- denoise_signal_causal(
   signal_noisy,
   scheme = scheme_haar,
   levels = 3,
@@ -157,48 +157,48 @@ signal_causal = denoise_signal_causal(
   beta = 1.2
 )
 
-df_signal$Causal = signal_causal
+df_signal$Causal <- signal_causal
 
 # Comparative Visualization (Focusing on Lag and Smoothing)
 # Zooming in on a fast transition area
 ggplot(
-  subset(df_signal, Index >= 200 & Index <= 800), 
+  subset(df_signal, Index >= 200 & Index <= 800),
   aes(x = Index)
-  ) +
+) +
   # Noise layer (background)
   geom_line(aes(y = Noisy), color = "grey30", alpha = 0.8) +
   # Reference
   geom_line(
-    aes(y = Original, color = "Original"), 
+    aes(y = Original, color = "Original"),
     linetype = "dashed", alpha = 0.7
-    ) +
+  ) +
   # Comparison
   geom_line(aes(y = Offline, color = "Offline (Global)"), size = 0.8) +
   geom_line(aes(y = Causal, color = "Causal (Real-Time)"), size = 0.8) +
   # Warm-up Marker
   geom_vline(xintercept = window_w, linetype = "dotted", color = "black") +
   annotate(
-    "text", 
-    x = window_w + 5, 
-    y = max(signal_pure) + 1, 
+    "text",
+    x = window_w + 5,
+    y = max(signal_pure) + 1,
     label = "Warm-up End",
-    hjust = 0, 
-    color = "black", 
+    hjust = 0,
+    color = "black",
     size = 3
-    ) +
-  
+  ) +
+
   scale_color_manual(
     values = c(
       "Original" = "black",
       "Offline (Global)" = "royalblue",
       "Causal (Real-Time)" = "firebrick"
-      )
-    ) +
+    )
+  ) +
   labs(
     title = "Comparison: Offline vs. Causal",
     subtitle = "Causal removes noise but exhibits natural phase lag compared to Offline",
     y = "Amplitude"
-    ) +
+  ) +
   theme_bw() +
   theme(legend.position = "bottom")
 ```

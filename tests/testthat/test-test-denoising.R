@@ -19,7 +19,7 @@ test_that("Causal Denoising runs correctly via stream processor", {
 
   # Simula stream
   out = numeric(100)
-  for(i in 1:100) {
+  for (i in 1:100) {
     val = proc(x[i])
     expect_false(is.na(val))
     out[i] = val

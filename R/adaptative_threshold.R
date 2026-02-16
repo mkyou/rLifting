@@ -22,7 +22,7 @@ compute_adaptive_threshold = function(lwt_obj, alpha = 0.3, beta = 1.2) {
   lambdas_vec = compute_thresholds_cpp(d1, max_level, alpha, beta)
 
   lambdas_list = list()
-  for(i in 1:max_level) {
+  for (i in 1:max_level) {
     lambdas_list[[paste0("d", i)]] = lambdas_vec[i]
   }
 

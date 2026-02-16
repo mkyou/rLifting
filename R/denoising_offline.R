@@ -15,13 +15,13 @@
 #' @return Filtered numeric vector (same length as input).
 #' @export
 denoise_signal_offline = function(
-    signal,
-    scheme,
-    alpha = 0.3,
-    beta = 1.2,
-    levels = 3,
-    method = "semisoft",
-    extension = "symmetric"
+  signal,
+  scheme,
+  alpha = 0.3,
+  beta = 1.2,
+  levels = 3,
+  method = "semisoft",
+  extension = "symmetric"
 ) {
 
   ext_int = switch(

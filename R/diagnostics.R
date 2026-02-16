@@ -12,17 +12,17 @@
 .generate_signal = function(type, n = 512) {
   t = seq(0, 1, length.out = n)
 
-  if (type == "const")   return(rep(100, n))
-  if (type == "ramp")    return(seq(1, 100, length.out = n))
-  if (type == "poly2")   return(100 * t^2)
-  if (type == "poly3")   return(100 * t^3)
-  if (type == "random")  return(rnorm(n))
+  if (type == "const") return(rep(100, n))
+  if (type == "ramp") return(seq(1, 100, length.out = n))
+  if (type == "poly2") return(100 * t^2)
+  if (type == "poly3") return(100 * t^3)
+  if (type == "random") return(rnorm(n))
   if (type == "impulse") {
     x = rep(0, n)
-    x[floor(n/2)] = 1
+    x[floor(n / 2)] = 1
     return(x)
   }
-  if (type == "sine")    return(sin(4 * pi * t))
+  if (type == "sine") return(sin(4 * pi * t))
 
   # Advanced Benchmarks
   if (type == "doppler") {
@@ -38,7 +38,7 @@
     pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
     h   = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
     w   = c(0.005, 0.005, 0.006, 0.01, 0.01, 0.03, 0.01, 0.01, 0.005,
-            0.008, 0.005)
+      0.008, 0.005)
 
     x = numeric(n)
     for (j in seq_along(pos)) {
@@ -84,7 +84,7 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-9) {
     sprintf("Max Error (Global): %.2e", max_err_global)
   } else {
     sprintf("FAILED on: %s. Max Error: %.2e",
-            paste(failed_signals, collapse=", "), max_err_global)
+      paste(failed_signals, collapse = ", "), max_err_global)
   }
 
   list(
@@ -107,7 +107,7 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-9) {
 #' @export
 validate_vanishing_moments = function(scheme, degree = 0, tol = 1e-9) {
   n = 128
-  type_map = c("0"="const", "1"="ramp", "2"="poly2", "3"="poly3")
+  type_map = c("0" = "const", "1" = "ramp", "2" = "poly2", "3" = "poly3")
   sig_type = type_map[as.character(degree)]
 
   if (is.na(sig_type)) return(
@@ -120,7 +120,7 @@ validate_vanishing_moments = function(scheme, degree = 0, tol = 1e-9) {
   d1 = res$coeffs$d1
 
   cut = floor(n * 0.15)
-  d_core = d1[(cut+1):(length(d1)-cut)]
+  d_core = d1[(cut + 1):(length(d1) - cut)]
 
   energy = sum(d_core^2)
   passed = energy < tol
@@ -163,7 +163,7 @@ validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-9) {
     passed = passed,
     metric = ratio,
     msg = sprintf("Ratio: %.6f (%s) [Exp: %s]",
-                  ratio, status_str, expected)
+      ratio, status_str, expected)
   )
 }
 
@@ -178,8 +178,8 @@ validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-9) {
 #' @export
 validate_compact_support = function(scheme, max_width) {
   n = 256
-  coeffs_mock = list(a1 = rep(0, n/2), d1 = rep(0, n/2))
-  coeffs_mock$d1[n/4] = 1
+  coeffs_mock = list(a1 = rep(0, n / 2), d1 = rep(0, n / 2))
+  coeffs_mock$d1[n / 4] = 1
 
   mock_lwt = structure(
     list(
@@ -215,12 +215,12 @@ validate_compact_support = function(scheme, max_width) {
 validate_shift_sensitivity = function(scheme) {
   n = 128
   x = rep(0, n)
-  x[n/2] = 1
+  x[n / 2] = 1
 
   res1 = lwt(x, scheme, levels = 1, extension = "periodic")
   energy1 = sum(res1$coeffs$d1^2)
 
-  x_shift = c(x[n], x[1:(n-1)])
+  x_shift = c(x[n], x[1:(n - 1)])
   res2 = lwt(x_shift, scheme, levels = 1, extension = "periodic")
   energy2 = sum(res2$coeffs$d1^2)
 
@@ -260,7 +260,7 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
 
   lwt_psi = structure(
     list(coeffs = coeffs_psi, scheme = scheme, levels = levels,
-         original_len = n, extension = "zero"),
+      original_len = n, extension = "zero"),
     class = "lwt"
   )
   psi = ilwt(lwt_psi)
@@ -273,20 +273,20 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
 
   lwt_phi = structure(
     list(coeffs = coeffs_phi, scheme = scheme, levels = levels,
-         original_len = n, extension = "zero"),
+      original_len = n, extension = "zero"),
     class = "lwt"
   )
   phi = ilwt(lwt_phi)
 
   if (plot) {
-    oldpar <- par(no.readonly = TRUE)
+    oldpar = par(no.readonly = TRUE)
     on.exit(par(oldpar))
     par(mfrow = c(1, 2))
     ts.plot(phi, main = paste("Scaling (Phi):", scheme$wavelet),
-            ylab = "Amp", col = "blue", lwd = 1.5)
+      ylab = "Amp", col = "blue", lwd = 1.5)
     grid()
     ts.plot(psi, main = paste("Wavelet (Psi):", scheme$wavelet),
-            ylab = "Amp", col = "red", lwd = 1.5)
+      ylab = "Amp", col = "red", lwd = 1.5)
     grid()
   }
 }
@@ -328,11 +328,11 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
     tests[[idx]] = validate_vanishing_moments(sch, degree = deg)
   }
 
-  tests[[length(tests)+1]] = validate_compact_support(
+  tests[[length(tests) + 1]] = validate_compact_support(
     sch, max_width = config$max_taps
   )
 
-  tests[[length(tests)+1]] = validate_shift_sensitivity(sch)
+  tests[[length(tests) + 1]] = validate_shift_sensitivity(sch)
 
   if (verbose) {
     cat("Generating basis visualization (check plot window)...\n")
@@ -341,7 +341,7 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE) {
 
   if (verbose) {
     for (res in tests) {
-      status = if(res$passed) "[PASS]" else "[FAIL]"
+      status = if (res$passed) "[PASS]" else "[FAIL]"
       if (res$name == "Shift Sensitivity") status = "[INFO]"
 
       cat(sprintf("%-6s %-35s | %s\n", status, res$name, res$msg))

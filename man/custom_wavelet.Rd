@@ -20,7 +20,7 @@ An object of class \code{lifting_scheme}.
 Wrapper to create a \code{lifting_scheme} object from manual steps.
 }
 \examples{
-p1 = lift_step("predict", c(1), position="center")
-u1 = lift_step("update", c(0.5), position="center")
+p1 = lift_step("predict", c(1), position = "center")
+u1 = lift_step("update", c(0.5), position = "center")
 w = custom_wavelet("HaarManual", list(p1, u1), c(1.41, 0.707))
 }

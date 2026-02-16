@@ -12,9 +12,9 @@
 #' @return An object of class \code{lifting_scheme}.
 #' @export
 lifting_scheme = function(
-    wavelet = "haar",
-    custom_steps = NULL,
-    custom_norm = NULL
+  wavelet = "haar",
+  custom_steps = NULL,
+  custom_norm = NULL
 ) {
 
   steps = list()
@@ -47,7 +47,7 @@ lifting_scheme = function(
       list(type = "predict", coeffs = c(1), start_idx = 0),
       list(type = "update",  coeffs = c(0.5), start_idx = 0)
     )
-    norm = c(sqrt(2), 1/sqrt(2))
+    norm = c(sqrt(2), 1 / sqrt(2))
     return(list(steps = steps, norm = norm))
   }
 
@@ -57,7 +57,7 @@ lifting_scheme = function(
       list(type = "predict", coeffs = c(sqrt3), start_idx = 0),
       list(
         type = "update",
-        coeffs = c(sqrt3/4, (sqrt3 - 2)/4), start_idx = 0
+        coeffs = c(sqrt3 / 4, (sqrt3 - 2) / 4), start_idx = 0
       ),
       list(type = "predict", coeffs = c(-1), start_idx = -1)
     )
@@ -70,7 +70,7 @@ lifting_scheme = function(
       list(type = "predict", coeffs = c(0.5, 0.5), start_idx = 0),
       list(type = "update", coeffs = c(0.25, 0.25), start_idx = -1)
     )
-    norm = c(sqrt(2), 1/sqrt(2))
+    norm = c(sqrt(2), 1 / sqrt(2))
     return(list(steps = steps, norm = norm))
   }
 
@@ -87,19 +87,19 @@ lifting_scheme = function(
       list(type = "predict", coeffs = c(-gamma, -gamma), start_idx = 0),
       list(type = "update",  coeffs = c(delta, delta), start_idx = -1)
     )
-    norm = c(zeta, 1/zeta)
+    norm = c(zeta, 1 / zeta)
     return(list(steps = steps, norm = norm))
   }
 
   if (name == "dd4" || name == "interp4") {
-    p_coeffs = c(-1/16, 9/16, 9/16, -1/16)
+    p_coeffs = c(-1 / 16, 9 / 16, 9 / 16, -1 / 16)
     u_coeffs = p_coeffs / 2
 
     steps = list(
       list(type = "predict", coeffs = p_coeffs, start_idx = -1),
       list(type = "update",  coeffs = u_coeffs, start_idx = -1)
     )
-    norm = c(sqrt(2), 1/sqrt(2))
+    norm = c(sqrt(2), 1 / sqrt(2))
     return(list(steps = steps, norm = norm))
   }
 
@@ -115,8 +115,19 @@ print.lifting_scheme = function(x, ...) {
   cat(sprintf("Lifting Scheme: %s\n", x$wavelet))
   cat(sprintf("Steps: %d\n", length(x$steps)))
   cat(sprintf("Norm:  Approx=%.4f, Detail=%.4f\n",
-              x$normalization[1], x$normalization[2]))
+    x$normalization[1], x$normalization[2]))
 }
+
+#' Plot method for Lifting Scheme
+#'
+#' @param x An object of class \code{lifting_scheme}.
+#' @param ... Additional arguments passed to \code{visualize_wavelet_basis}.
+#' @return Invisibly returns \code{NULL}.
+#' @export
+plot.lifting_scheme = function(x, ...) {
+  visualize_wavelet_basis(x, plot = TRUE, ...)
+}
+
 
 
 #' Create an individual Lifting Step
@@ -139,10 +150,10 @@ print.lifting_scheme = function(x, ...) {
 #' @return A list formatted for the internal lifting engine.
 #' @export
 lift_step = function(
-    type = c("predict", "update"),
-    coeffs,
-    start_idx = NULL,
-    position = "center"
+  type = c("predict", "update"),
+  coeffs,
+  start_idx = NULL,
+  position = "center"
 ) {
 
   type = match.arg(type)
@@ -172,8 +183,8 @@ lift_step = function(
 #' @return An object of class \code{lifting_scheme}.
 #' @export
 #' @examples
-#' p1 = lift_step("predict", c(1), position="center")
-#' u1 = lift_step("update", c(0.5), position="center")
+#' p1 = lift_step("predict", c(1), position = "center")
+#' u1 = lift_step("update", c(0.5), position = "center")
 #' w = custom_wavelet("HaarManual", list(p1, u1), c(1.41, 0.707))
 custom_wavelet = function(name, steps, norm = c(1, 1)) {
   structure(

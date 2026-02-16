@@ -57,17 +57,17 @@ For Haar, $K=(\sqrt{2},\sqrt{1/2})$.
 ```{r}
 # 1. Prediction Step
 # "center" automatically aligns the filter
-p1 = lift_step(type = "predict", coeffs = c(1), position = "center")
+p1 <- lift_step(type = "predict", coeffs = c(1), position = "center")
 
 # 2. Update Step
-u1 = lift_step(type = "update", coeffs = c(0.5), position = "center")
+u1 <- lift_step(type = "update", coeffs = c(0.5), position = "center")
 
 # 3. Packaging
 # Standard Haar Normalization: (sqrt(2), 1/sqrt(2))
-my_haar = lifting_scheme(
+my_haar <- lifting_scheme(
   wavelet = "ManualHaar",
   custom_steps = list(p1, u1),
-  custom_norm = c(sqrt(2), 1/sqrt(2))
+  custom_norm = c(sqrt(2), 1 / sqrt(2))
 )
 
 print(my_haar)
@@ -87,8 +87,8 @@ diagnose_wavelet(
     is_ortho = TRUE, # Haar is orthogonal
     vm_degrees = c(0), # Tests only degree 0 (Constant)
     max_taps = 2 # Expected filter width
-    )
   )
+)
 ```
 
 The Lifting Scheme inherently guarantees perfect reconstruction.
@@ -101,26 +101,26 @@ We expect the transform to be invertible, but to fail the vanishing moments test
 
 ```{r}
 # Predict from CDF 9/7 (Sophisticated)
-alpha = -1.586134342
-p_hybrid = lift_step("predict", c(-alpha, -alpha), position = "center")
+alpha <- -1.586134342
+p_hybrid <- lift_step("predict", c(-alpha, -alpha), position = "center")
 
 # Update from Haar (Too simple to compensate the Predict above)
-u_hybrid = lift_step("update", c(0.5), position = "center")
+u_hybrid <- lift_step("update", c(0.5), position = "center")
 
-frankenstein = lifting_scheme(
+frankenstein <- lifting_scheme(
   wavelet = "FrankenWavelet",
   custom_steps = list(p_hybrid, u_hybrid)
 )
 
 # Running Diagnosis
 diagnose_wavelet(
-  frankenstein, 
+  frankenstein,
   list(
     is_ortho = FALSE,
     vm_degrees = c(0, 1), # Testing degrees 0 and 1
     max_taps = 5
-    )
   )
+)
 ```
 
 ## Implementing DB4 (Daubechies 8-taps)
@@ -147,26 +147,26 @@ Therefore, to port MATLAB coefficients to `rLifting`, **we must invert the signs
 # Coefficients (Signs adjusted for rLifting engine: d = o - P(e))
 
 # Step 1 (Predict): Term z^1
-p1 = lift_step("predict", c(0.32227589), start_idx = 1)
+p1 <- lift_step("predict", c(0.32227589), start_idx = 1)
 
 # Step 2 (Update): Terms z^0, z^-1
-u1 = lift_step("update", c(-0.30014226, -1.11712361), start_idx = -1)
+u1 <- lift_step("update", c(-0.30014226, -1.11712361), start_idx = -1)
 
 # Step 3 (Predict): Terms z^2, z^1
-p2 = lift_step("predict", c(-0.11764809, 0.01880835), start_idx = 1)
+p2 <- lift_step("predict", c(-0.11764809, 0.01880835), start_idx = 1)
 
 # Step 4 (Update): Terms z^0, z^-1
-u2 = lift_step("update", c(0.63642827, 2.13181671), start_idx = -1)
+u2 <- lift_step("update", c(0.63642827, 2.13181671), start_idx = -1)
 
 # Step 5 (Predict): Terms z^0, z^-1, z^-2
-p3 = lift_step(
+p3 <- lift_step(
   "predict", c(0.02479124, -0.14003924, 0.46908348), start_idx = -2
-  )
+)
 
 # Normalization (K and 1/K)
-norm_db4 = c(0.73412453, 1.36216672)
+norm_db4 <- c(0.73412453, 1.36216672)
 
-db4_custom = lifting_scheme(
+db4_custom <- lifting_scheme(
   wavelet = "DB4_Custom",
   custom_steps = list(p1, u1, p2, u2, p3),
   custom_norm = norm_db4
@@ -181,8 +181,8 @@ diagnose_wavelet(
     is_ortho = TRUE,
     vm_degrees = c(0, 1, 2, 3),
     max_taps = 8
-    )
   )
+)
 ```
 
 **Observation on Wavelet Shape and Numerical Precision:** While the diagnostic confirms that the wavelet satisfies the mathematical requirements (Perfect Reconstruction, 4 Vanishing Moments, and Orthogonality), you might notice in the generated plots that the shape, although fractal, appears jagged or slightly different from the standard textbook "Daubechies 4".
