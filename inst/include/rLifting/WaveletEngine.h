@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-
 using namespace Rcpp;
 
 // CLASS WAVELET ENGINE (Stateful Processing)
@@ -156,7 +155,7 @@ public:
 
       // Lifting Steps
       for (const auto &step : steps) {
-        int k_filt = step.coeffs.size();
+        int k_filt = (int)step.coeffs.size();
         if (step.type == "predict") {
           for (int i = 0; i < n_odd; i++) {
             double sum = 0.0;
@@ -220,20 +219,20 @@ public:
       int n_odd = odd.size();
 
       // De-normalization
-      for (int i = 0; i < even.size(); i++)
+      for (int i = 0; i < (int)even.size(); i++)
         even[i] /= norm_approx;
-      for (int i = 0; i < odd.size(); i++)
+      for (int i = 0; i < (int)odd.size(); i++)
         odd[i] /= norm_detail;
 
       // Reverse Lifting Steps
-      for (int k = steps.size() - 1; k >= 0; k--) {
+      for (int k = (int)steps.size() - 1; k >= 0; k--) {
         const auto &step = steps[k];
-        int k_filt = step.coeffs.size();
+        int k_filt = (int)step.coeffs.size();
         if (step.type == "predict") {
           for (int i = 0; i < n_odd; i++) {
             double sum = 0.0;
             for (int m = 0; m < k_filt; m++)
-              sum += get_val(even, i + step.start_idx + m, even.size()) *
+              sum += get_val(even, i + step.start_idx + m, (int)even.size()) *
                      step.coeffs[m];
             odd[i] += sum;
           }
@@ -241,7 +240,7 @@ public:
           for (int i = 0; i < n_even; i++) {
             double sum = 0.0;
             for (int m = 0; m < k_filt; m++)
-              sum += get_val(odd, i + step.start_idx + m, odd.size()) *
+              sum += get_val(odd, i + step.start_idx + m, (int)odd.size()) *
                      step.coeffs[m];
             even[i] -= sum;
           }
@@ -249,11 +248,11 @@ public:
       }
 
       // Merge (Inverse Lazy)
-      int target_size = work_approx[j].size();
-      for (int i = 0; i < even.size(); i++)
+      int target_size = (int)work_approx[j].size();
+      for (int i = 0; i < (int)even.size(); i++)
         if (2 * i < target_size)
           work_approx[j][2 * i] = even[i];
-      for (int i = 0; i < odd.size(); i++)
+      for (int i = 0; i < (int)odd.size(); i++)
         if (2 * i + 1 < target_size)
           work_approx[j][2 * i + 1] = odd[i];
     }
