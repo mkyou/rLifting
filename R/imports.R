@@ -8,7 +8,7 @@
 #' @name rLifting
 #' @importFrom stats median rnorm cor sd ts.plot
 #' @importFrom utils setTxtProgressBar tail txtProgressBar head
-#' @importFrom graphics par grid lines legend title
+#' @importFrom graphics par grid lines legend title barplot
 #' @importFrom Rcpp sourceCpp
 #' @useDynLib rLifting, .registration = TRUE
 "_PACKAGE"

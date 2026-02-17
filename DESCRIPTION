@@ -27,15 +27,7 @@ Suggests:
     rmarkdown,
     dplyr,
     ggplot2,
-    gridExtra,
-    tidyr,
-    microbenchmark,
-    wavethresh,
-    wavelets,
-    adlift,
-    waveslim,
-    nlt,
-    CNLTreg
+    microbenchmark
 Config/testthat/edition: 3
 Depends: 
-    R (>= 3.5)
+    R (>= 4.1.0)

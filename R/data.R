@@ -47,8 +47,8 @@
 #'
 #' @format A data frame with:
 #' \describe{
-#'   \item{Mode}{Processing mode (Causal or Offline).}
-#'   \item{Pre_Trigger_Energy}{Sum of squared coefficients before the impulse trigger index.}
+#'   \item{Method}{Method description (e.g. "rLifting causal").}
+#'   \item{Leakage}{Sum of squared differences (leakage energy).}
 #' }
 #' @usage data(leakage_results)
 "leakage_results"

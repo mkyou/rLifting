@@ -9,188 +9,241 @@ library(microbenchmark)
 set.seed(2025)
 
 # --- Check for Suggested Packages ---
-pkgs <- c("wavethresh", "wavelets", "adlift", "waveslim", "nlt", "CNLTreg")
-installed_pkgs <- pkgs[pkgs %in% rownames(installed.packages())]
+pkgs = c("wavethresh", "adlift", "nlt")
+installed_pkgs = pkgs[pkgs %in% rownames(installed.packages())]
 
 message("Packages available for benchmark: ", paste(installed_pkgs, collapse = ", "))
 
-# --- 1. Doppler Example (Base) ---
-message("Generating Doppler Example...")
-n_samples <- 2048
-signal_pure <- rLifting:::.generate_signal("doppler", n = n_samples)
-noise <- rnorm(n_samples, sd = 0.5)
-signal_noisy <- signal_pure + noise
+# Load all installed packages globally to avoid scope issues
+for(p in installed_pkgs) {
+  library(p, character.only = TRUE)
+}
 
-doppler_example <- data.frame(
+# --- 1. Doppler Example (Base) ---
+message("Generating Doppler example...")
+n_samples = 2048
+signal_pure = rLifting:::.generate_signal("doppler", n_samples)
+noise = rnorm(n_samples, sd = 0.5)
+signal_noisy = signal_pure + noise
+
+doppler_example = data.frame(
   index = 1:n_samples,
   original = signal_pure,
   noisy = signal_noisy
 )
 
 # --- 2. Offline Benchmark (Speed & Accuracy) ---
-message("Running Offline Benchmark (Haar, N=1024)...")
+message("Running offline benchmark (Haar, N=1024)...")
 
 # Config
-N_SIM <- 20 
-T_PTS <- 1024
-SIG_TYPE <- "doppler"
-LEVELS_OFFLINE <- floor(log2(T_PTS))
+N_SIM = 50
+T_PTS = 1024
+SIG_TYPE = "doppler"
+LEVELS_OFFLINE = floor(log2(T_PTS))
 
-results_offline <- list()
-counter <- 1
+results_offline = list()
+counter = 1
 
 for(i in 1:N_SIM) {
+  if(i %% 10 == 0) message("  Simulation ", i, "/", N_SIM)
+
   # Generate Data
-  pure <- rLifting:::.generate_signal(SIG_TYPE, n = T_PTS)
-  noisy <- pure + rnorm(T_PTS, sd = 0.3)
-  x_grid <- 1:T_PTS
-  
+  pure = rLifting:::.generate_signal(SIG_TYPE, n = T_PTS)
+  noisy = pure + rnorm(T_PTS, sd = 0.3)
+  x_grid = 1:T_PTS
+
   # -- rLifting --
-  t_rl <- system.time({
-    res_rl <- denoise_signal_offline(
-      noisy, lifting_scheme("haar"), levels = LEVELS_OFFLINE, method = "soft"
-    )
-  })['elapsed']
-  
-  mse_rl <- mean((pure - res_rl)^2)
-  results_offline[[counter]] <- data.frame(Pkg="rLifting", Time=as.numeric(t_rl), MSE=mse_rl)
-  counter <- counter + 1
-  
+  # Compute result for MSE
+  res_rl = denoise_signal_offline(
+    noisy, lifting_scheme("haar"), levels = LEVELS_OFFLINE, method = "semisoft"
+  )
+  # Time with microbenchmark (nanosecond precision)
+  mb_rl = microbenchmark(
+    denoise_signal_offline(noisy, lifting_scheme("haar"), levels = LEVELS_OFFLINE, method = "semisoft"),
+    times = 5L
+  )
+  t_rl = median(mb_rl$time) / 1e9
+  mse_rl = mean((pure - res_rl)^2)
+  results_offline[[counter]] = data.frame(Pkg="rLifting", Time=t_rl, MSE=mse_rl)
+  counter = counter + 1
+
   # -- wavethresh --
   if("wavethresh" %in% installed_pkgs) {
     tryCatch({
-      t_wt <- system.time({
-        wd_obj <- wavethresh::wd(noisy, filter.number=1, family="DaubExPhase", type="wavelet")
-        # Wavethresh handles levels differently (nlevels). usually nlevels = log2(N).
-        # We can just threshold the whole object.
-        th_obj <- wavethresh::threshold(wd_obj, policy="universal", type="soft")
-        res_wt <- wavethresh::wr(th_obj)
-      })['elapsed']
-      mse_wt <- mean((pure - res_wt)^2)
-      results_offline[[counter]] <- data.frame(Pkg="wavethresh", Time=as.numeric(t_wt), MSE=mse_wt)
-      counter <- counter + 1
-    }, error = function(e) message("wavethresh error: ", e$message))
+      out_wt = {
+        wd_obj = wavethresh::wd(noisy, filter.number=1, family="DaubExPhase", type="wavelet")
+        th_obj = wavethresh::threshold(wd_obj, policy="universal", type="soft")
+        wavethresh::wr(th_obj)
+      }
+      mb_wt = microbenchmark({
+        wd_obj = wavethresh::wd(noisy, filter.number=1, family="DaubExPhase", type="wavelet")
+        th_obj = wavethresh::threshold(wd_obj, policy="universal", type="soft")
+        wavethresh::wr(th_obj)
+      }, times = 5L)
+      t_wt = median(mb_wt$time) / 1e9
+      mse_wt = mean((pure - out_wt)^2)
+      results_offline[[counter]] = data.frame(Pkg="wavethresh", Time=t_wt, MSE=mse_wt)
+    }, error = function(e) {
+      message("wavethresh failed: ", e$message)
+      results_offline[[counter]] <<- data.frame(Pkg="wavethresh", Time=NA, MSE=NA)
+    })
+  } else {
+    results_offline[[counter]] = data.frame(Pkg="wavethresh", Time=NA, MSE=NA)
   }
-  
-  # -- wavelets --
-  if("wavelets" %in% installed_pkgs) {
-    tryCatch({
-      t_wv <- system.time({
-        wt_obj <- wavelets::dwt(noisy, filter="haar", n.levels=LEVELS_OFFLINE)
-        res_inv <- wavelets::idwt(wt_obj) 
-      })['elapsed']
-      results_offline[[counter]] <- data.frame(Pkg="wavelets", Time=as.numeric(t_wv), MSE=NA)
-      counter <- counter + 1
-    }, error = function(e) message("wavelets error: ", e$message))
-  }
-
-  # -- waveslim --
-  if("waveslim" %in% installed_pkgs) {
-    tryCatch({
-      t_ws <- system.time({
-        ws_obj <- waveslim::dwt(noisy, wf="haar", n.levels=LEVELS_OFFLINE)
-        # Simple soft thresholding manually
-        univ_thresh <- sqrt(2 * log(T_PTS))
-        ws_thresh <- lapply(ws_obj, function(x) sign(x) * pmax(abs(x) - univ_thresh, 0))
-        res_ws <- waveslim::idwt(ws_thresh)
-      })['elapsed']
-      mse_ws <- mean((pure - res_ws[1:T_PTS])^2)
-      results_offline[[counter]] <- data.frame(Pkg="waveslim", Time=as.numeric(t_ws), MSE=mse_ws)
-      counter <- counter + 1
-    }, error = function(e) message("waveslim error: ", e$message))
-  }
+  counter = counter + 1
 
   # -- adlift --
   if("adlift" %in% installed_pkgs) {
     tryCatch({
-      t_al <- system.time({
-        # adlift is adaptive
-        al_obj <- adlift::amt(noisy, x_grid, filternumber=1, family="DaubExPhase")
-        al_den <- adlift::denoise(al_obj, f=1) 
-        res_al <- al_den
-      })['elapsed']
-      mse_al <- mean((pure - res_al)^2)
-      results_offline[[counter]] <- data.frame(Pkg="adlift", Time=as.numeric(t_al), MSE=mse_al)
-      counter <- counter + 1
-    }, error = function(e) message("adlift error: ", e$message))
+      out_al = as.vector(denoise(x_grid, noisy))
+      mb_al = microbenchmark(denoise(x_grid, noisy), times = 1L)
+      t_al = mb_al$time[1] / 1e9
+      mse_al = mean((pure - out_al)^2)
+      results_offline[[counter]] = data.frame(Pkg="adlift", Time=t_al, MSE=mse_al)
+    }, error = function(e) {
+      message("adlift failed: ", e$message)
+      results_offline[[counter]] <<- data.frame(Pkg="adlift", Time=NA, MSE=NA)
+    })
+  } else {
+    results_offline[[counter]] = data.frame(Pkg="adlift", Time=NA, MSE=NA)
   }
+  counter = counter + 1
 
   # -- nlt --
   if("nlt" %in% installed_pkgs) {
     tryCatch({
-      t_nlt <- system.time({
-         nlt_res <- nlt::denoise.nlt(noisy, family="DaubExPhase", filter=1)
-         res_nlt <- nlt_res$denoised
-      })['elapsed']
-      mse_nlt <- mean((pure - res_nlt)^2)
-      results_offline[[counter]] <- data.frame(Pkg="nlt", Time=as.numeric(t_nlt), MSE=mse_nlt)
-      counter <- counter + 1
-    }, error = function(e) message("nlt error: ", e$message))
+      out_nlt = as.vector(denoiseperm(x_grid, noisy))
+      mb_nlt = microbenchmark(denoiseperm(x_grid, noisy), times = 1L)
+      t_nlt = mb_nlt$time[1] / 1e9
+      mse_nlt = mean((pure - out_nlt)^2)
+      results_offline[[counter]] = data.frame(Pkg="nlt", Time=t_nlt, MSE=mse_nlt)
+    }, error = function(e) {
+      message("nlt failed: ", e$message)
+      results_offline[[counter]] <<- data.frame(Pkg="nlt", Time=NA, MSE=NA)
+    })
+  } else {
+    results_offline[[counter]] = data.frame(Pkg="nlt", Time=NA, MSE=NA)
   }
+  counter = counter + 1
 }
 
-benchmark_offline <- do.call(rbind, results_offline)
+benchmark_offline = do.call(rbind, results_offline)
 
-# --- 3. Causal Benchmark ---
-message("Running Causal Benchmark...")
-W_SIZE <- 128
-N_TEST <- 500
-LEVELS_CAUSAL <- floor(log2(W_SIZE))
-pure <- rLifting:::.generate_signal("heavisine", n = N_TEST)
-noisy <- pure + rnorm(N_TEST, sd = 0.3)
+# --- 3. Causal Benchmark (Speed + MSE) ---
+message("Running causal benchmark...")
+W_SIZE = 128
+LEVELS_CAUSAL = floor(log2(W_SIZE))
+N_TEST = 500
+pure = rLifting:::.generate_signal("heavisine", n = N_TEST)
+noisy = pure + rnorm(N_TEST, sd = 0.3)
 
-# -- rLifting --
-t_rl_causal <- microbenchmark(
-  Process = {
-    res <- denoise_signal_causal(noisy, lifting_scheme("haar"), window_size=W_SIZE, levels=LEVELS_CAUSAL)
-  },
-  times = 5
+# -- rLifting causal --
+res_rl_causal = denoise_signal_causal(
+  noisy, lifting_scheme("haar"), window_size = W_SIZE, levels = LEVELS_CAUSAL
 )
+mb_rl_causal = microbenchmark(
+  denoise_signal_causal(noisy, lifting_scheme("haar"),
+                        window_size = W_SIZE, levels = LEVELS_CAUSAL),
+  times = 10L
+)
+mse_rl_causal = mean((pure - res_rl_causal)^2)
 
-# -- Wavethresh Naive --
-t_wt_naive <- NA
+# -- Wavethresh Naive Loop --
+t_wt_naive = NA
+mse_wt_naive = NA
 if("wavethresh" %in% installed_pkgs) {
-  naive_causal_func <- function(series, w) {
-    out <- numeric(length(series))
-    out[1:(w-1)] <- series[1:(w-1)]
+  naive_causal_func = function(series, w) {
+    out = numeric(length(series))
+    out[1:(w-1)] = series[1:(w-1)]
     for(k in w:length(series)) {
-      block <- series[(k-w+1):k]
-      wd_obj <- wavethresh::wd(block, filter.number=1, family="DaubExPhase", type="wavelet")
-      th_obj <- wavethresh::threshold(wd_obj, policy="universal", type="soft")
-      rec <- wavethresh::wr(th_obj)
-      out[k] <- tail(rec, 1)
+      block = series[(k-w+1):k]
+      suppressWarnings({
+        wd_obj = wavethresh::wd(block, filter.number=1,
+                                  family="DaubExPhase", type="wavelet")
+        th_obj = wavethresh::threshold(wd_obj, policy="universal", type="soft")
+        rec = wavethresh::wr(th_obj)
+      })
+      out[k] = tail(rec, 1)
     }
     return(out)
   }
   tryCatch({
-    start_t <- Sys.time()
-    res_naive <- naive_causal_func(noisy, W_SIZE)
-    end_t <- Sys.time()
-    t_wt_naive <- as.numeric(difftime(end_t, start_t, units="secs"))
+    res_naive = naive_causal_func(noisy, W_SIZE)
+    mb_naive = microbenchmark(naive_causal_func(noisy, W_SIZE), times = 3L)
+    t_wt_naive = median(mb_naive$time) / 1e9
+    mse_wt_naive = mean((pure - res_naive)^2)
   }, error = function(e) message("naive causal error: ", e$message))
 }
 
-benchmark_causal <- list(
-  rLifting_Time_Avg = mean(t_rl_causal$time) / 1e9,
+benchmark_causal = list(
+  rLifting_Time_Avg = median(mb_rl_causal$time) / 1e9,
   Wavethresh_Naive_Time = t_wt_naive,
-  Speedup_Factor = if(!is.na(t_wt_naive)) t_wt_naive / (mean(t_rl_causal$time) / 1e9) else NA
+  Speedup_Factor = if(!is.na(t_wt_naive)) t_wt_naive / (median(mb_rl_causal$time) / 1e9) else NA,
+  rLifting_MSE = mse_rl_causal,
+  Wavethresh_Naive_MSE = mse_wt_naive
 )
 
-# --- 4. Leakage ---
-message("Calculating Leakage...")
-n_imp <- 256
-impulse <- rep(0, n_imp)
-trigger_idx <- 128
-impulse[trigger_idx] <- 10
+# --- 4. Leakage test (counterfactual) ---
+# Run each filter on two signals that share identical noise for t < t_change.
+#   Signal A: noise only (no event)
+#   Signal B: same noise, but with a step of amplitude 5 added at t >= t_change
+# Leakage = sum((output_B[pre] - output_A[pre])^2)
+# A causal filter → leakage = 0
+# An offline filter with long support → leakage > 0
 
-out_causal <- denoise_signal_causal(impulse, lifting_scheme("cdf97"), window_size=64, levels=3, beta=0)
-out_offline <- denoise_signal_offline(impulse, lifting_scheme("cdf97"), levels=3, beta=0)
+message("Running leakage test...")
+set.seed(2025)
+n_leak = 256
+t_change = 128
+LEVELS_LEAK = floor(log2(n_leak))
 
-leakage_results <- data.frame(
-  Mode = c("Causal", "Offline"),
-  Pre_Trigger_Energy = c(sum(out_causal[1:(trigger_idx-1)]^2), sum(out_offline[1:(trigger_idx-1)]^2))
+noise = rnorm(n_leak, sd = 0.5)
+signal_A = noise
+signal_B = noise + c(rep(0, t_change), rep(5, n_leak - t_change))
+
+pre = 1:(t_change - 1)
+
+# --- rLifting causal (CDF 9/7) ---
+out_A_causal = denoise_signal_causal(signal_A, lifting_scheme("cdf97"),
+  window_size = 64, levels = floor(log2(64)), method = "semisoft")
+out_B_causal = denoise_signal_causal(signal_B, lifting_scheme("cdf97"),
+  window_size = 64, levels = floor(log2(64)), method = "semisoft")
+
+# --- rLifting offline (CDF 9/7) ---
+out_A_offline = denoise_signal_offline(signal_A, lifting_scheme("cdf97"),
+  levels = LEVELS_LEAK, method = "semisoft")
+out_B_offline = denoise_signal_offline(signal_B, lifting_scheme("cdf97"),
+  levels = LEVELS_LEAK, method = "semisoft")
+
+# --- wavethresh offline (D8, comparable support to CDF 9/7) ---
+out_A_wt = rep(NA_real_, n_leak)
+out_B_wt = rep(NA_real_, n_leak)
+if("wavethresh" %in% installed_pkgs) {
+  tryCatch({
+    wd_A = wavethresh::wd(signal_A, filter.number=4, family="DaubExPhase", type="wavelet")
+    th_A = wavethresh::threshold(wd_A, policy="universal", type="soft")
+    out_A_wt = wavethresh::wr(th_A)
+
+    wd_B = wavethresh::wd(signal_B, filter.number=4, family="DaubExPhase", type="wavelet")
+    th_B = wavethresh::threshold(wd_B, policy="universal", type="soft")
+    out_B_wt = wavethresh::wr(th_B)
+  }, error = function(e) message("wavethresh leakage error: ", e$message))
+}
+
+leakage_results = data.frame(
+  Method = c("rLifting causal (CDF 9/7)", "rLifting offline (CDF 9/7)", "wavethresh offline (D8)"),
+  Leakage = c(
+    sum((out_B_causal[pre] - out_A_causal[pre])^2),
+    sum((out_B_offline[pre] - out_A_offline[pre])^2),
+    sum((out_B_wt[pre] - out_A_wt[pre])^2, na.rm = TRUE)
+  )
 )
 
 message("Saving data...")
-usethis::use_data(doppler_example, benchmark_offline, benchmark_causal, leakage_results, overwrite = TRUE)
+usethis::use_data(doppler_example, benchmark_offline, benchmark_causal,
+                  leakage_results, overwrite = TRUE)
 message("Done!")
+
+
+
+

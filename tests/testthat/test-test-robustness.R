@@ -9,11 +9,11 @@ test_that("Stream processor handles NA and Inf gracefully", {
   expect_equal(v1, 1) # Deve retornar 1 puro
 
   # Envia NA (deve retornar NA e emitir warning)
-  expect_warning(val_na <- proc(NA))
+  expect_warning({ val_na = proc(NA) })
   expect_true(is.na(val_na))
 
   # Envia Inf (deve retornar Inf e emitir warning)
-  expect_warning(val_inf <- proc(Inf))
+  expect_warning({ val_inf = proc(Inf) })
   expect_true(is.infinite(val_inf))
 })
 

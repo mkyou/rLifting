@@ -1,115 +1,164 @@
 ## rLifting: high-performance wavelet lifting for R
 
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) **rLifting** is a versatile package for wavelet lifting transforms, bridging the gap between robust **offline analysis** (batch) and high-performance **causal processing** (online/streaming).
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Unlike traditional packages that rely heavily on R-based loop structures, `rLifting` implements a hybrid architecture with a specialized C++ core, making it suitable for both functional data analysis (FDA) and production environments requiring low latency.
+`rLifting` is a high-performance R package for wavelet-based signal
+denoising. It implements the Lifting Scheme (Sweldens, 1996) with a
+zero-allocation C++ core via Rcpp, supporting both offline (batch) and
+causal (real-time) processing modes through a unified API.
 
-### 🚀 Key features
+### Why rLifting?
 
--   **Unified framework:** seamlessly switch between non-causal (global) and causal (windowed) denoising using the same wavelet schemes.
--   **High-performance core:** zero-allocation C++ engine (via Rcpp) optimized for speed.
--   **Causal & online:** implements a specialized ring buffer architecture for processing streaming data with fixed memory footprint.
--   **Adaptive thresholding:** recursive thresholding algorithms (based on Liu et al., 2014) for dynamic noise estimation.
--   **Custom wavelets:** simple API to construct bespoke wavelets defining predict/update steps.
--   **Reliability:** comprehensive unit testing (140+ tests) covering edge cases and mathematical reconstruction properties.
+Most wavelet packages in R are designed for offline use: they require the
+entire signal before processing. To perform causal filtering (where the
+output at time *t* depends only on data up to *t*), the user must write
+a sliding-window loop that re-computes the transform at every point —
+an O(N·W) operation.
 
-### ⚡ Performance
+`rLifting` solves this with a specialized ring-buffer architecture that
+provides amortized O(1) per-sample processing, while maintaining full
+compatibility with standard offline denoising.
 
-Benchmarks performed on `100,000` events simulation (window=1024, levels=3):
+### Key features
 
-| Metric | Result | Description |
-|:-----------------------|:-----------------------|:-----------------------|
-| **Latency** | **\~11.9 μs** | Microseconds per sample injection (C++ core) |
-| **Batch throughput** | **\~7,100** curves/sec | Full offline denoising (1024 points each) |
-| **Stream throughput** | **\~23,000** events/sec | Online processing loop within R |
+- **Offline and causal denoising** in a single package — same wavelet
+  scheme, same API, different processing guarantees.
+- **Zero-allocation C++ engine** via Rcpp. All transforms, thresholding,
+  and reconstruction run at native speed.
+- **Ring-buffer stream processor** (`new_wavelet_stream`) for real-time
+  applications: fixed memory, constant-time updates, microsecond latency.
+- **No look-ahead bias.** Causal mode guarantees zero data leakage from
+  future to past (verified via counterfactual leakage tests against
+  `wavethresh`).
+- **Adaptive thresholding** based on Liu et al. (2014): recursive MAD-based
+  noise estimation with three shrinkage methods (hard, soft, semisoft).
+- **Six built-in wavelets**: Haar, DB2, CDF 5/3, CDF 9/7 (JPEG 2000),
+  DD4, and Lazy. Plus a simple API for custom wavelets via
+  `lift_step()` + `custom_wavelet()`.
+- **Diagnostic suite** (`diagnose_wavelet`): automatic verification of
+  perfect reconstruction, vanishing moments, orthogonality, compact
+  support, and shift sensitivity.
 
-*Results indicate suitability for industrial sensor monitoring, financial time-series, and real-time signal cleaning.*
+### Performance
 
-### 📦 Installation
+Benchmarks against `wavethresh`, `adlift`, and `nlt` on a Doppler signal
+(N = 1024, Haar, 50 simulations):
 
-You can install the development version from GitHub:
+| Metric | rLifting | wavethresh | adlift | nlt |
+|:---|---:|---:|---:|---:|
+| Median time (ms) | < 1 | < 1 | ~600 | ~900 |
+| MSE | 0.009 | 0.025 | 0.009 | 0.009 |
+
+`rLifting` matches the reconstruction accuracy of the adaptive lifting
+packages (`adlift`, `nlt`) while running orders of magnitude faster.
+`wavethresh` is fast but uses a fixed global threshold, resulting in
+higher MSE.
+
+For causal processing, `rLifting`'s ring-buffer architecture is ~700×
+faster than a naive sliding-window loop built on `wavethresh`.
+
+### Installation
 
 ``` r
-# install.packages("remotes") 
+# install.packages("remotes")
 remotes::install_github("mkyou/rLifting")
 ```
 
-### 🏁 Quick start
+### Quick start
 
-#### Offline denoising (global batch)
+#### Offline denoising
 
-Ideal for historical data analysis where future points are known.
-Uses global statistics for thresholding.
+Process an entire signal at once using global statistics.
 
 ``` r
 library(rLifting)
 
-# 1. Generate synthetic data
-x = rLifting:::.generate_signal("doppler", n = 1024)
-x_noisy = x + rnorm(1024, sd = 0.2)
+# Generate a noisy Doppler signal
+x <- rLifting:::.generate_signal("doppler", n = 1024)
+x_noisy <- x + rnorm(1024, sd = 0.2)
 
-# 2. Define scheme (e.g., DB2, Haar, CDF97)
-scheme = lifting_scheme("db2")
+scheme <- lifting_scheme("cdf97")
 
-# 3. Denoise (global)
-x_clean = denoise_signal_offline(
-  x_noisy, 
-  scheme, 
+x_clean <- denoise_signal_offline(
+  x_noisy, scheme,
   levels = floor(log2(length(x_noisy))),
   method = "semisoft"
 )
 
-# Plot
 plot(x_noisy, col = "grey", type = "l", main = "Offline denoising")
 lines(x_clean, col = "blue", lwd = 2)
+lines(x, col = "black", lty = 2)
 ```
 
 #### Causal denoising
 
-Ideal for real-time scenarios.
-Data is processed through a sliding window without "looking ahead".
+Process a signal without using future data. Useful for financial
+backtesting, real-time control, and streaming applications.
 
 ``` r
-# Initialize the causal engine (stateful)
-# Window size = 256
-processor = new_wavelet_stream(
-  scheme, 
-  window_size = 256, 
+x_causal <- denoise_signal_causal(
+  x_noisy, scheme,
+  window_size = 256,
+  levels = floor(log2(256)),
+  method = "semisoft"
+)
+```
+
+#### Real-time stream processing
+
+Feed one sample at a time and get a denoised estimate immediately.
+
+``` r
+processor <- new_wavelet_stream(
+  scheme, window_size = 256,
   levels = floor(log2(256))
 )
 
-# Simulate a stream (point-by-point)
-stream_output = numeric(length(x_noisy))
-
+stream_output <- numeric(length(x_noisy))
 for (i in seq_along(x_noisy)) {
-  # Feed one sample, get one denoised sample immediately
-  stream_output[i] = processor(x_noisy[i])
+  stream_output[i] <- processor(x_noisy[i])
 }
-
-# Visualization: note the natural phase lag in causal filtering
-lines(stream_output, col = "red", lwd = 2)
-legend("topright", legend=c("Original", "Offline", "Causal"), 
-       col=c("grey", "blue", "red"), lty=1)
 ```
 
-### 📚 Documentation
+#### Custom wavelets
 
-Detailed vignettes are available (currently in Portuguese, English translation coming soon):
+Define wavelets by specifying predict and update steps:
 
--   **Introduction:** `vignette("01_introduction", package = "rLifting")`
--   **Benchmarks (offline):** `vignette("02_benchmark_offline", package = "rLifting")`
--   **Benchmarks (causal):** `vignette("03_benchmark_causal", package = "rLifting")`
--   **Real-time processing:** `vignette("04_realtime", package = "rLifting")`
--   **Extensions:** `vignette("05_extensions", package = "rLifting")`
+``` r
+p <- lift_step("predict", coeffs = c(0.5, 0.5), start_idx = 0)
+u <- lift_step("update", coeffs = c(0.25, 0.25), start_idx = -1)
+my_wavelet <- custom_wavelet("MyCDF53", list(p, u), c(sqrt(2), 1/sqrt(2)))
 
-### 🗺️ Roadmap
+# Works in any function
+result <- denoise_signal_offline(x_noisy, my_wavelet, levels = 5)
+```
 
-Future versions of `rLifting` will focus on expanding support for complex data structures:
+### Documentation
 
--   **Wavelet packets:** full support for Wavelet Packet Decomposition (WPD) for finer frequency resolution.
--   **Irregular grids:** native handling of non-equispaced data (Second Generation Wavelets) without the need for imputation.
--   **Multivariate denoising:** joint denoising of correlated signals.
+Detailed vignettes are available after installation:
 
-### 📄 License
+| Vignette | Topic |
+|:---------|:------|
+| `01_introduction` | Package overview, basic usage |
+| `02_benchmark_offline` | Speed and MSE comparison with wavethresh, adlift, nlt |
+| `03_benchmark_causal` | Causal speed benchmark + counterfactual leakage test |
+| `04_realtime` | Real-time stream processing with latency analysis |
+| `05_extensions` | Custom wavelets, diagnostics, thresholding, low-level API |
+
+``` r
+vignette("01_introduction", package = "rLifting")
+```
+
+### Roadmap
+
+The following features are planned for future versions of `rLifting`:
+
+- **Wavelet packets:** full support for Wavelet Packet Decomposition (WPD)
+  for finer frequency resolution.
+- **Irregular grids:** native handling of non-equispaced data (Second
+  Generation Wavelets) without imputation.
+- **Multivariate denoising:** joint denoising of correlated signals.
+
+### License
 
 MIT License.
