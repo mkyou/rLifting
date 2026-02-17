@@ -15,3 +15,4 @@ rLifting.Rcheck/
 vignettes/*.html
 docs
 CRAN-SUBMISSION
+inst/doc

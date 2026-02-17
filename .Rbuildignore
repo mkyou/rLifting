@@ -18,5 +18,4 @@
 ^docs$
 ^pkgdown$
 ^data-raw$
-^inst/doc$
 ^\.github$
