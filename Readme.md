@@ -139,14 +139,14 @@ Detailed vignettes are available after installation:
 
 | Vignette | Topic |
 |:---------|:------|
-| `01_introduction` | Package overview, basic usage |
-| `02_benchmark_offline` | Speed and MSE comparison with wavethresh, adlift, nlt |
-| `03_benchmark_causal` | Causal speed benchmark + counterfactual leakage test |
-| `04_realtime` | Real-time stream processing with latency analysis |
-| `05_extensions` | Custom wavelets, diagnostics, thresholding, low-level API |
+| `introduction` | Package overview, basic usage |
+| `benchmark_offline` | Speed and MSE comparison with wavethresh, adlift, nlt |
+| `benchmark_causal` | Causal speed benchmark + counterfactual leakage test |
+| `realtime` | Real-time stream processing with latency analysis |
+| `extensions` | Custom wavelets, diagnostics, thresholding, low-level API |
 
 ``` r
-vignette("01_introduction", package = "rLifting")
+vignette("introduction", package = "rLifting")
 ```
 
 ### Roadmap
