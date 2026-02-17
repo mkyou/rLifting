@@ -2,9 +2,9 @@ pandoc: 3.1.11
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  01_introduction: 01_introduction.html
-  02_benchmark_offline: 02_benchmark_offline.html
-  03_benchmark_causal: 03_benchmark_causal.html
-  04_realtime: 04_realtime.html
-  05_extensions: 05_extensions.html
-last_built: 2026-02-17T17:19Z
+  benchmark_causal: benchmark_causal.html
+  benchmark_offline: benchmark_offline.html
+  extensions: extensions.html
+  introduction: introduction.html
+  realtime: realtime.html
+last_built: 2026-02-17T17:22Z
