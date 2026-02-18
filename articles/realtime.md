@@ -115,11 +115,11 @@ per-sample overhead is extremely low:
 latency_us = process_time[-1] * 1e6
 
 cat(sprintf("Median latency: %.1f \u00b5s\n", median(latency_us)))
-#> Median latency: 9.8 µs
+#> Median latency: 9.5 µs
 cat(sprintf("95th percentile: %.1f \u00b5s\n", quantile(latency_us, 0.95)))
-#> 95th percentile: 11.2 µs
+#> 95th percentile: 10.8 µs
 cat(sprintf("Max latency: %.1f \u00b5s\n", max(latency_us)))
-#> Max latency: 34.6 µs
+#> Max latency: 35.0 µs
 ```
 
 ``` r
