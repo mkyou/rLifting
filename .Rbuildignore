@@ -17,5 +17,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^dissertacao_exemplos$
 ^data-raw$
 ^\.github$
