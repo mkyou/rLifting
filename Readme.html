@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rLifting</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -16,14 +16,7 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/benchmark_causal.html">3. Causal decomposition: the rLifting advantage</a></li>
-    <li><a class="dropdown-item" href="articles/benchmark_offline.html">2. Benchmark: speed and reconstruction accuracy</a></li>
-    <li><a class="dropdown-item" href="articles/extensions.html">5. Extensions and advanced usage</a></li>
-    <li><a class="dropdown-item" href="articles/introduction.html">1. Introduction: offline, causal and online analysis</a></li>
-    <li><a class="dropdown-item" href="articles/realtime.html">4. Real-time signal smoothing</a></li>
-  </ul></li>
+<li class="nav-item"><a class="nav-link" href="articles/index.html">Articles</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
@@ -47,7 +40,7 @@
 <div class="section level3">
 <h3 id="why-rlifting">Why rLifting?<a class="anchor" aria-label="anchor" href="#why-rlifting"></a></h3>
 <p>Most wavelet packages in R are designed for offline use: they require the entire signal before processing. To perform causal filtering (where the output at time <em>t</em> depends only on data up to <em>t</em>), the user must write a sliding-window loop that re-computes the transform at every point — an O(N·W) operation.</p>
-<p><code>rLifting</code> solves this with a specialized ring-buffer architecture that provides amortized O(1) per-sample processing, while maintaining full compatibility with standard offline denoising.</p>
+<p><code>rLifting</code> solves this with a specialized ring-buffer architecture that provides efficient O(T) processing for the complete signal (where T is the number of observations), while maintaining full compatibility with standard offline denoising.</p>
 </div>
 <div class="section level3">
 <h3 id="key-features">Key features<a class="anchor" aria-label="anchor" href="#key-features"></a></h3>
@@ -56,7 +49,7 @@
 <li>
 <strong>Zero-allocation C++ engine</strong> via Rcpp. All transforms, thresholding, and reconstruction run at native speed.</li>
 <li>
-<strong>Ring-buffer stream processor</strong> (<code>new_wavelet_stream</code>) for real-time applications: fixed memory, constant-time updates, microsecond latency.</li>
+<strong>Ring-buffer stream processor</strong> (<code>new_wavelet_stream</code>) for real-time applications: fixed memory, high-speed updates, microsecond latency.</li>
 <li>
 <strong>No look-ahead bias.</strong> Causal mode guarantees zero data leakage from future to past (verified via counterfactual leakage tests against <code>wavethresh</code>).</li>
 <li>
@@ -174,13 +167,13 @@
 </div>
 <div class="section level3">
 <h3 id="roadmap">Roadmap<a class="anchor" aria-label="anchor" href="#roadmap"></a></h3>
-<p>The following features are planned for future versions of <code>rLifting</code>:</p>
+<p>Based on the current development of the FATE estimator research, the following features are planned:</p>
 <ul><li>
-<strong>Wavelet packets:</strong> full support for Wavelet Packet Decomposition (WPD) for finer frequency resolution.</li>
+<strong>Irregular grids:</strong> native handling of non-equispaced data (Second Generation Wavelets) without interpolation.</li>
 <li>
-<strong>Irregular grids:</strong> native handling of non-equispaced data (Second Generation Wavelets) without imputation.</li>
+<strong>Multivariate denoising:</strong> joint denoising of correlated signals to incorporate covariance structure.</li>
 <li>
-<strong>Multivariate denoising:</strong> joint denoising of correlated signals.</li>
+<strong>Boundary refinements:</strong> implement local linear predictors for edge handling to improve reconstruction at signal boundaries (crucial for real-time causal estimation).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a></h3>

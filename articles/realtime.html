@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rLifting</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,16 +30,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/benchmark_causal.html">3. Causal decomposition: the rLifting advantage</a></li>
-    <li><a class="dropdown-item" href="../articles/benchmark_offline.html">2. Benchmark: speed and reconstruction accuracy</a></li>
-    <li><a class="dropdown-item" href="../articles/extensions.html">5. Extensions and advanced usage</a></li>
-    <li><a class="dropdown-item" href="../articles/introduction.html">1. Introduction: offline, causal and online analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/realtime.html">4. Real-time signal smoothing</a></li>
-  </ul>
-</li>
+<li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -81,9 +72,8 @@ waiting for the entire series to be collected.</p>
 <code><a href="../reference/new_wavelet_stream.html">new_wavelet_stream()</a></code>, a closure-based stream processor
 backed by a high-performance C++ ring buffer. Each call to the processor
 accepts a single numeric value and returns the denoised estimate in
-amortized
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">O(1)</annotation></semantics></math>
-time, regardless of the window size or decomposition depth.</p>
+highly efficient time, regardless of the window size or decomposition
+depth.</p>
 </div>
 <div class="section level2">
 <h2 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
@@ -93,7 +83,7 @@ time, regardless of the window size or decomposition depth.</p>
 most recent observations. When a new sample arrives:</p>
 <ol style="list-style-type: decimal">
 <li>The oldest sample is evicted from the ring buffer and the new one is
-inserted (O(1) ring buffer update).</li>
+inserted (constant-time ring buffer update).</li>
 <li>The lifting transform is applied to the current window
 contents.</li>
 <li>The wavelet coefficients are thresholded using the specified method
@@ -222,11 +212,11 @@ per-sample overhead is extremely low:</p>
 <span><span class="va">latency_us</span> <span class="op">=</span> <span class="va">process_time</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="fl">1e6</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Median latency: %.1f \u00b5s\n"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">latency_us</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Median latency: 9.5 µs</span></span>
+<span><span class="co">#&gt; Median latency: 9.8 µs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"95th percentile: %.1f \u00b5s\n"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">latency_us</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 95th percentile: 10.8 µs</span></span>
+<span><span class="co">#&gt; 95th percentile: 11.0 µs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Max latency: %.1f \u00b5s\n"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">latency_us</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Max latency: 35.0 µs</span></span></code></pre></div>
+<span><span class="co">#&gt; Max latency: 40.8 µs</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">latency_us</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Per-sample processing latency"</span>,</span>

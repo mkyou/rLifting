@@ -2,7 +2,7 @@
 
 Generates a stateful function backed by a high-performance 'C++' Ring
 Buffer engine. It implements Sliding Window + Lifting Decomposition +
-Adaptive Thresholding in constant amortized time (O(1)) per sample.
+Adaptive Thresholding in highly efficient time per sample.
 
 ## Usage
 

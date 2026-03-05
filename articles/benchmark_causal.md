@@ -9,7 +9,7 @@ loop, re-calculating the transform at every new point.
 This approach has $O(N \cdot W)$ complexity (where $W$ is the window
 size). `rLifting` implements a specialized causal mode using a
 ring-buffer architecture, which updates the transform state in $O(N)$
-(amortized $O(1)$ per point).
+total complexity (where $N$ is the signal length).
 
 As in vignette 2, the results are pre-computed by the script
 `data-raw/generate_vignette_data.R`.

@@ -12,7 +12,7 @@ series to be collected.
 [`new_wavelet_stream()`](../reference/new_wavelet_stream.md), a
 closure-based stream processor backed by a high-performance C++ ring
 buffer. Each call to the processor accepts a single numeric value and
-returns the denoised estimate in amortized $O(1)$ time, regardless of
+returns the denoised estimate in highly efficient time, regardless of
 the window size or decomposition depth.
 
 ## How it works
@@ -21,7 +21,7 @@ The stream processor maintains a fixed-size sliding window of the $W$
 most recent observations. When a new sample arrives:
 
 1.  The oldest sample is evicted from the ring buffer and the new one is
-    inserted (O(1) ring buffer update).
+    inserted (constant-time ring buffer update).
 2.  The lifting transform is applied to the current window contents.
 3.  The wavelet coefficients are thresholded using the specified method
     (hard, soft, or semisoft) with an adaptive threshold controlled by
@@ -115,11 +115,11 @@ per-sample overhead is extremely low:
 latency_us = process_time[-1] * 1e6
 
 cat(sprintf("Median latency: %.1f \u00b5s\n", median(latency_us)))
-#> Median latency: 9.5 µs
+#> Median latency: 9.8 µs
 cat(sprintf("95th percentile: %.1f \u00b5s\n", quantile(latency_us, 0.95)))
-#> 95th percentile: 10.8 µs
+#> 95th percentile: 11.0 µs
 cat(sprintf("Max latency: %.1f \u00b5s\n", max(latency_us)))
-#> Max latency: 35.0 µs
+#> Max latency: 40.8 µs
 ```
 
 ``` r
