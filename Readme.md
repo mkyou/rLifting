@@ -16,8 +16,9 @@ a sliding-window loop that re-computes the transform at every point —
 an O(N·W) operation.
 
 `rLifting` solves this with a specialized ring-buffer architecture that
-provides amortized O(1) per-sample processing, while maintaining full
-compatibility with standard offline denoising.
+provides efficient O(T) processing for the complete signal (where T is the 
+number of observations), while maintaining full compatibility with 
+standard offline denoising.
 
 ### Key features
 
@@ -26,7 +27,7 @@ compatibility with standard offline denoising.
 - **Zero-allocation C++ engine** via Rcpp. All transforms, thresholding,
   and reconstruction run at native speed.
 - **Ring-buffer stream processor** (`new_wavelet_stream`) for real-time
-  applications: fixed memory, constant-time updates, microsecond latency.
+  applications: fixed memory, high-speed updates, microsecond latency.
 - **No look-ahead bias.** Causal mode guarantees zero data leakage from
   future to past (verified via counterfactual leakage tests against
   `wavethresh`).
@@ -151,14 +152,13 @@ vignette("introduction", package = "rLifting")
 
 ### Roadmap
 
-The following features are planned for future versions of `rLifting`:
+Based on the current development of the FATE estimator research, the following features are planned:
 
-- **Wavelet packets:** full support for Wavelet Packet Decomposition (WPD)
-  for finer frequency resolution.
-- **Irregular grids:** native handling of non-equispaced data (Second
-  Generation Wavelets) without imputation.
-- **Multivariate denoising:** joint denoising of correlated signals.
+- **Irregular grids:** native handling of non-equispaced data (Second Generation Wavelets) without interpolation.
+- **Multivariate denoising:** joint denoising of correlated signals to incorporate covariance structure.
+- **Boundary refinements:** implement local linear predictors for edge handling to improve reconstruction at signal boundaries (crucial for real-time causal estimation).
 
 ### License
 
 MIT License.
+

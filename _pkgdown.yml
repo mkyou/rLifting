@@ -2,3 +2,12 @@ url: ~
 template:
   bootstrap: 5
 
+articles:
+  - title: "User Guide"
+    contents:
+      - introduction
+      - benchmark_offline
+      - benchmark_causal
+      - realtime
+      - extensions
+

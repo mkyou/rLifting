@@ -20,3 +20,4 @@
 ^dissertacao_exemplos$
 ^data-raw$
 ^\.github$
+^vignettes/.*\.R$

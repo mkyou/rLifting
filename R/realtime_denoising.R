@@ -4,7 +4,7 @@
 #' Ring Buffer engine.
 #' It implements Sliding Window + Lifting Decomposition +
 #'  Adaptive Thresholding
-#' in constant amortized time (O(1)) per sample.
+#' in highly efficient time per sample.
 #'
 #' @param scheme A \code{lifting_scheme} object.
 #' @param window_size Sliding window size (W). Must be > 8.
