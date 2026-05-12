@@ -299,6 +299,141 @@ plot(lifting_scheme("cdf97"))
 This is helpful for understanding the shape and support of a wavelet,
 and for verifying that custom wavelets produce reasonable basis functions.
 
+## 8. Boundary extension modes
+
+Every transform function in `rLifting` accepts an `extension` parameter
+that controls how the signal is extrapolated when a filter reaches the
+edge of the available data. The choice of boundary mode can meaningfully
+affect reconstruction quality, particularly for short windows or signals
+with strong trends at the edges.
+
+Four modes are available:
+
+| Mode            | Behaviour                                                        | Best for                          |
+|:----------------|:-----------------------------------------------------------------|:----------------------------------|
+| `"symmetric"`   | Reflects the signal at the boundary (default)                    | Stationary signals, general use   |
+| `"periodic"`    | Wraps the signal (assumes periodicity)                           | Periodic signals, mathematical tests |
+| `"zero"`        | Pads with zeros beyond the edge                                  | Signals with compact support      |
+| `"local_linear"`| Extrapolates linearly from the two nearest boundary samples      | Trending signals, real-time edges |
+
+### Linear extrapolation at boundaries
+
+The `"local_linear"` mode fits a straight line through the two outermost
+samples and extends it beyond the signal boundary. For a left boundary
+where index $i < 0$:
+
+$$\hat{x}[i] = x[0] + i \cdot (x[1] - x[0])$$
+
+And for a right boundary where $i \geq n$:
+
+$$\hat{x}[i] = x[n-1] + (i - (n-1)) \cdot (x[n-1] - x[n-2])$$
+
+This is particularly relevant in **causal (real-time) processing**, where
+the ring buffer window has a hard left edge corresponding to the oldest
+sample in memory. With symmetric reflection, a filter that looks past this
+edge "bounces" back into the buffer, which can create artificial energy in
+the detail coefficients. Linear extrapolation avoids this artefact by
+continuing the local trend instead.
+
+```{r boundary_compare, fig.width=7, fig.height=5}
+set.seed(42)
+n = 256
+
+# A linearly trending signal — where boundary extrapolation matters most
+t_vec = seq(0, 1, length.out = n)
+trend  = 3 * t_vec
+noisy  = trend + 0.3 * rnorm(n) + 0.5 * sin(2 * pi * 8 * t_vec)
+
+sch = lifting_scheme("cdf97")
+levels = 4
+
+res_sym = denoise_signal_offline(noisy, sch, levels = levels, extension = "symmetric")
+res_per = denoise_signal_offline(noisy, sch, levels = levels, extension = "periodic")
+res_zer = denoise_signal_offline(noisy, sch, levels = levels, extension = "zero")
+res_ll  = denoise_signal_offline(noisy, sch, levels = levels, extension = "local_linear")
+
+df_bnd = data.frame(
+  t      = rep(t_vec, 5),
+  value  = c(noisy, res_sym, res_per, res_zer, res_ll),
+  Signal = rep(c("Noisy", "symmetric", "periodic", "zero", "local_linear"), each = n)
+)
+
+ggplot(df_bnd, aes(x = t, y = value, colour = Signal, linewidth = Signal)) +
+  geom_line(alpha = 0.85) +
+  scale_linewidth_manual(values = c(
+    "Noisy" = 0.3, "symmetric" = 0.7, "periodic" = 0.7,
+    "zero" = 0.7, "local_linear" = 1.1
+  )) +
+  scale_colour_manual(values = c(
+    "Noisy"        = "grey75",
+    "symmetric"    = "#0072B2",
+    "periodic"     = "#CC79A7",
+    "zero"         = "#E69F00",
+    "local_linear" = "#009E73"
+  )) +
+  labs(
+    title    = "Boundary modes comparison — offline denoising (CDF 9/7, 4 levels)",
+    subtitle = "Linearly trending signal + harmonic noise",
+    x = "Time", y = "Amplitude"
+  ) +
+  theme_minimal()
+```
+
+The edge regions (first and last ~5% of the signal) reveal the most
+visible differences between modes. `"local_linear"` preserves the slope
+of the trend through the boundary, while `"zero"` and `"periodic"` can
+introduce artefacts when the signal has a non-zero mean or trend at the
+edges.
+
+### Causal stream with local_linear
+
+```{r boundary_causal, fig.width=7, fig.height=4}
+set.seed(1)
+n = 512
+t2 = seq(0, 2, length.out = n)
+x_causal = 2 * t2 + 0.4 * rnorm(n) + sin(2 * pi * 4 * t2)
+
+sch_haar = lifting_scheme("haar")
+wsize = 64; lvls = 3
+
+proc_sym = new_wavelet_stream(sch_haar, window_size = wsize, levels = lvls,
+                              extension = "symmetric")
+proc_ll  = new_wavelet_stream(sch_haar, window_size = wsize, levels = lvls,
+                              extension = "local_linear")
+
+out_sym = numeric(n)
+out_ll  = numeric(n)
+for (i in seq_len(n)) {
+  out_sym[i] = proc_sym(x_causal[i])
+  out_ll[i]  = proc_ll(x_causal[i])
+}
+
+df_caus = data.frame(
+  t      = rep(t2, 3),
+  value  = c(x_causal, out_sym, out_ll),
+  Signal = rep(c("Noisy", "symmetric", "local_linear"), each = n)
+)
+
+ggplot(df_caus, aes(x = t, y = value, colour = Signal, linewidth = Signal)) +
+  geom_line(alpha = 0.85) +
+  scale_linewidth_manual(values = c("Noisy" = 0.3, "symmetric" = 0.8, "local_linear" = 1.0)) +
+  scale_colour_manual(values = c(
+    "Noisy"        = "grey75",
+    "symmetric"    = "#0072B2",
+    "local_linear" = "#009E73"
+  )) +
+  labs(
+    title    = "Causal stream: symmetric vs local_linear (Haar, window = 64)",
+    subtitle = "Trending signal — differences concentrate at window boundaries",
+    x = "Time", y = "Amplitude"
+  ) +
+  theme_minimal()
+```
+
+Perfect reconstruction is guaranteed for all modes — applying `ilwt`
+after `lwt` with the same `extension` value always recovers the original
+signal to machine precision ($\epsilon < 10^{-9}$).
+
 ## Summary
 
 `rLifting` is designed to be both high-performance and extensible:
@@ -312,4 +447,7 @@ and for verifying that custom wavelets produce reasonable basis functions.
   provide flexible noise removal.
 - **Low-level API** (`lwt`/`ilwt` + `compute_adaptive_threshold` +
   `threshold`) allows fully custom pipelines.
+- **Four boundary modes** (`symmetric`, `periodic`, `zero`,
+  `local_linear`) control edge behaviour across all functions; `local_linear`
+  is especially suited to trending signals and real-time causal windows.
 - The **C++ backend** ensures that all operations run at native speed.

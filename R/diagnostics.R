@@ -34,6 +34,14 @@
     return(4 * sin(4 * pi * t) - sign(t - 0.3) - sign(0.72 - t))
   }
 
+  if (type == "blocks") {
+    pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
+    h   = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
+    x   = numeric(n)
+    for (j in seq_along(pos)) x = x + h[j] * (1 + sign(t - pos[j])) / 2
+    return(x)
+  }
+
   if (type == "bumps") {
     pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
     h   = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
@@ -154,7 +162,6 @@ validate_orthogonality = function(scheme, expected = TRUE, tol = 1e-9) {
   is_ortho = abs(ratio - 1) < tol
 
   passed = (expected && is_ortho) || (!expected)
-  if (expected && !is_ortho) passed = FALSE
 
   status_str = if (is_ortho) "Orthogonal" else "Non-Orthogonal"
 

@@ -19,7 +19,7 @@ inline double get_val_safe(
         const std::vector<double>& x,
         int i, int n, int mode
 ) {
-    // Mode: 1=symmetric, 2=periodic, 3=zero
+    // Mode: 1=symmetric, 2=periodic, 3=zero, 4=local_linear
 
     if (i >= 0 && i < n) return x[i]; // Fast path
 
@@ -31,7 +31,20 @@ inline double get_val_safe(
         return x[idx];
     }
 
-    // Symmetric (Reflection)
+    if (mode == 4) { // Local linear extrapolation
+        if (n < 2) return x[0];
+        if (i < 0) {
+            // Left boundary: extrapolate using slope of first two samples
+            double slope = x[1] - x[0];
+            return x[0] + static_cast<double>(i) * slope;
+        } else {
+            // Right boundary: extrapolate using slope of last two samples
+            double slope = x[n - 1] - x[n - 2];
+            return x[n - 1] + static_cast<double>(i - (n - 1)) * slope;
+        }
+    }
+
+    // Symmetric (Reflection) — default
     while (i < 0 || i >= n) {
         if (i < 0) i = -1 - i;
         else i = 2 * n - 1 - i;
@@ -39,6 +52,28 @@ inline double get_val_safe(
     if (i < 0) i = 0;
     if (i >= n) i = n - 1;
     return x[i];
+}
+
+// Normalized (one-sided) convolution at position `pos`.
+// Uses only in-bounds coefficients, renormalized by their sum.
+// Fast path when the entire filter window is within bounds.
+inline double onesided_conv(
+        const std::vector<double>& x, int n,
+        const double* c, int k, int start_idx, int pos
+) {
+    int first = pos + start_idx;
+    int last  = first + k - 1;
+    if (first >= 0 && last < n) {   // fast path: no boundary contact
+        double s = 0.0;
+        for (int j = 0; j < k; j++) s += x[first + j] * c[j];
+        return s;
+    }
+    double vs = 0.0, ws = 0.0;     // boundary path: drop out-of-bounds taps
+    for (int j = 0; j < k; j++) {
+        int idx = first + j;
+        if (idx >= 0 && idx < n) { vs += x[idx] * c[j]; ws += c[j]; }
+    }
+    return (ws > 1e-15) ? vs / ws : 0.0;
 }
 
 // Function Signatures

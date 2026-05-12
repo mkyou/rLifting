@@ -10,7 +10,7 @@
 #' @param beta Threshold scale factor.
 #' @param levels Number of decomposition levels.
 #' @param method Thresholding method ("hard", "soft", "semisoft").
-#' @param extension Extension mode ("symmetric", "periodic", "zero").
+#' @param extension Extension mode ("symmetric", "periodic", "zero", "local_linear").
 #'
 #' @return Filtered numeric vector (same length as input).
 #' @export
@@ -26,9 +26,11 @@ denoise_signal_offline = function(
 
   ext_int = switch(
     extension,
-    "symmetric" = 1L,
-    "periodic"  = 2L,
-    "zero"      = 3L,
+    "symmetric"    = 1L,
+    "periodic"     = 2L,
+    "zero"         = 3L,
+    "local_linear" = 4L,
+    "one_sided"    = 5L,
     1L
   )
 

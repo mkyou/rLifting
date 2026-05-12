@@ -127,6 +127,8 @@ public:
     if (count < window_size)
       return new_val;
 
+    bool use_os = (ext_mode == 5);
+
     // Linearization (Ring -> Flat)
     // Copy required to ensure contiguity for the Transform
     for (int i = 0; i < window_size; i++) {
@@ -156,21 +158,30 @@ public:
       // Lifting Steps
       for (const auto &step : steps) {
         int k_filt = (int)step.coeffs.size();
+        const double* c = step.coeffs.data();
         if (step.type == "predict") {
-          for (int i = 0; i < n_odd; i++) {
-            double sum = 0.0;
-            for (int k = 0; k < k_filt; k++)
-              sum += get_val(even, i + step.start_idx + k, n_even) *
-                     step.coeffs[k];
-            odd[i] -= sum;
+          if (use_os) {
+            for (int i = 0; i < n_odd; i++)
+              odd[i] -= onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+          } else {
+            for (int i = 0; i < n_odd; i++) {
+              double sum = 0.0;
+              for (int k = 0; k < k_filt; k++)
+                sum += get_val(even, i + step.start_idx + k, n_even) * c[k];
+              odd[i] -= sum;
+            }
           }
         } else {
-          for (int i = 0; i < n_even; i++) {
-            double sum = 0.0;
-            for (int k = 0; k < k_filt; k++)
-              sum +=
-                  get_val(odd, i + step.start_idx + k, n_odd) * step.coeffs[k];
-            even[i] += sum;
+          if (use_os) {
+            for (int i = 0; i < n_even; i++)
+              even[i] += onesided_conv(odd, n_odd, c, k_filt, step.start_idx, i);
+          } else {
+            for (int i = 0; i < n_even; i++) {
+              double sum = 0.0;
+              for (int k = 0; k < k_filt; k++)
+                sum += get_val(odd, i + step.start_idx + k, n_odd) * c[k];
+              even[i] += sum;
+            }
           }
         }
       }
@@ -228,21 +239,32 @@ public:
       for (int k = (int)steps.size() - 1; k >= 0; k--) {
         const auto &step = steps[k];
         int k_filt = (int)step.coeffs.size();
+        const double* c = step.coeffs.data();
+        int sz_even = (int)even.size();
+        int sz_odd  = (int)odd.size();
         if (step.type == "predict") {
-          for (int i = 0; i < n_odd; i++) {
-            double sum = 0.0;
-            for (int m = 0; m < k_filt; m++)
-              sum += get_val(even, i + step.start_idx + m, (int)even.size()) *
-                     step.coeffs[m];
-            odd[i] += sum;
+          if (use_os) {
+            for (int i = 0; i < n_odd; i++)
+              odd[i] += onesided_conv(even, sz_even, c, k_filt, step.start_idx, i);
+          } else {
+            for (int i = 0; i < n_odd; i++) {
+              double sum = 0.0;
+              for (int m = 0; m < k_filt; m++)
+                sum += get_val(even, i + step.start_idx + m, sz_even) * c[m];
+              odd[i] += sum;
+            }
           }
         } else {
-          for (int i = 0; i < n_even; i++) {
-            double sum = 0.0;
-            for (int m = 0; m < k_filt; m++)
-              sum += get_val(odd, i + step.start_idx + m, (int)odd.size()) *
-                     step.coeffs[m];
-            even[i] -= sum;
+          if (use_os) {
+            for (int i = 0; i < n_even; i++)
+              even[i] -= onesided_conv(odd, sz_odd, c, k_filt, step.start_idx, i);
+          } else {
+            for (int i = 0; i < n_even; i++) {
+              double sum = 0.0;
+              for (int m = 0; m < k_filt; m++)
+                sum += get_val(odd, i + step.start_idx + m, sz_odd) * c[m];
+              even[i] -= sum;
+            }
           }
         }
       }

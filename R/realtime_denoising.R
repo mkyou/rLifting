@@ -12,7 +12,7 @@
 #' @param alpha Threshold decay parameter (Eq 9).
 #' @param beta Threshold gain factor (Eq 9).
 #' @param method Shrinkage method: "hard", "soft", "semisoft".
-#' @param extension Boundary handling ('symmetric', 'periodic', 'zero').
+#' @param extension Boundary handling ('symmetric', 'periodic', 'zero', 'local_linear').
 #' @param update_freq How often to recompute threshold statistics (default 1).
 #'
 #' @return A closure function \code{processor(new_sample)} that accepts
@@ -33,7 +33,7 @@ new_wavelet_stream = function(
 
   ext_int = switch(
     extension,
-    "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, 1L
+    "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, "local_linear" = 4L, "one_sided" = 5L, 1L
   )
 
   engine_ptr = create_engine_cpp(
@@ -111,7 +111,7 @@ print.wavelet_stream = function(x, ...) {
 #' @param alpha Threshold decay parameter (Eq 9).
 #' @param beta Threshold gain factor (Eq 9).
 #' @param method Thresholding method ("soft", "hard", "semisoft").
-#' @param extension Boundary treatment ('symmetric', 'periodic').
+#' @param extension Boundary treatment ('symmetric', 'periodic', 'zero', 'local_linear').
 #' @param update_freq Frequency of threshold updates.
 #'
 #' @return Filtered vector (same length as input).
@@ -130,7 +130,7 @@ denoise_signal_causal = function(
 
   ext_int = switch(
     extension,
-    "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, 1L
+    "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, "local_linear" = 4L, "one_sided" = 5L, 1L
   )
 
   output = run_causal_batch_cpp(

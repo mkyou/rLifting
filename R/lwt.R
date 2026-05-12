@@ -7,7 +7,7 @@
 #' @param scheme A \code{lifting_scheme} object.
 #' @param levels Integer. Number of decomposition levels.
 #' @param extension Boundary extension mode: "symmetric" (default),
-#' "periodic", or "zero".
+#' "periodic", "zero", or "local_linear" (linear extrapolation from boundary samples).
 #'
 #' @return An object of class 'lwt'. It is a list containing
 #' 'coeffs' (list of details d1..dn and approximation an) and
@@ -38,9 +38,11 @@ lwt = function(signal, scheme, levels = 1, extension = "symmetric") {
   }
 
   ext_int = switch(extension,
-    "symmetric" = 1L,
-    "periodic"  = 2L,
-    "zero"      = 3L,
+    "symmetric"    = 1L,
+    "periodic"     = 2L,
+    "zero"         = 3L,
+    "local_linear" = 4L,
+    "one_sided"    = 5L,
     1L)
 
   coeffs_list = lwt_cpp(

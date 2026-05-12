@@ -64,6 +64,7 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
 
   std::vector<double> current_app = as<std::vector<double>>(signal);
   std::vector<std::vector<double>> details(levels);
+  bool use_os = (ext_mode == 5);
 
   // FORWARD LWT
   for (int j = 0; j < levels; j++) {
@@ -81,22 +82,30 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
 
     for (const auto &step : cpp_steps) {
       int k_filt = (int)step.coeffs.size();
+      const double* c = step.coeffs.data();
       if (step.type == "predict") {
-        for (int i = 0; i < n_odd; i++) {
-          double sum = 0.0;
-          for (int k = 0; k < k_filt; k++)
-            sum +=
-                get_val_safe(even, i + step.start_idx + k, n_even, ext_mode) *
-                step.coeffs[k];
-          odd[i] -= sum;
+        if (use_os) {
+          for (int i = 0; i < n_odd; i++)
+            odd[i] -= onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+        } else {
+          for (int i = 0; i < n_odd; i++) {
+            double sum = 0.0;
+            for (int k = 0; k < k_filt; k++)
+              sum += get_val_safe(even, i + step.start_idx + k, n_even, ext_mode) * c[k];
+            odd[i] -= sum;
+          }
         }
       } else {
-        for (int i = 0; i < n_even; i++) {
-          double sum = 0.0;
-          for (int k = 0; k < k_filt; k++)
-            sum += get_val_safe(odd, i + step.start_idx + k, n_odd, ext_mode) *
-                   step.coeffs[k];
-          even[i] += sum;
+        if (use_os) {
+          for (int i = 0; i < n_even; i++)
+            even[i] += onesided_conv(odd, n_odd, c, k_filt, step.start_idx, i);
+        } else {
+          for (int i = 0; i < n_even; i++) {
+            double sum = 0.0;
+            for (int k = 0; k < k_filt; k++)
+              sum += get_val_safe(odd, i + step.start_idx + k, n_odd, ext_mode) * c[k];
+            even[i] += sum;
+          }
         }
       }
     }
@@ -154,22 +163,30 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
       int n_even = (int)even.size();
       int n_odd = (int)odd.size();
 
+      const double* c = step.coeffs.data();
       if (step.type == "predict") {
-        for (int i = 0; i < n_odd; i++) {
-          double sum = 0.0;
-          for (int m = 0; m < k_filt; m++)
-            sum +=
-                get_val_safe(even, i + step.start_idx + m, n_even, ext_mode) *
-                step.coeffs[m];
-          odd[i] += sum;
+        if (use_os) {
+          for (int i = 0; i < n_odd; i++)
+            odd[i] += onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+        } else {
+          for (int i = 0; i < n_odd; i++) {
+            double sum = 0.0;
+            for (int m = 0; m < k_filt; m++)
+              sum += get_val_safe(even, i + step.start_idx + m, n_even, ext_mode) * c[m];
+            odd[i] += sum;
+          }
         }
       } else {
-        for (int i = 0; i < n_even; i++) {
-          double sum = 0.0;
-          for (int m = 0; m < k_filt; m++)
-            sum += get_val_safe(odd, i + step.start_idx + m, n_odd, ext_mode) *
-                   step.coeffs[m];
-          even[i] -= sum;
+        if (use_os) {
+          for (int i = 0; i < n_even; i++)
+            even[i] -= onesided_conv(odd, n_odd, c, k_filt, step.start_idx, i);
+        } else {
+          for (int i = 0; i < n_even; i++) {
+            double sum = 0.0;
+            for (int m = 0; m < k_filt; m++)
+              sum += get_val_safe(odd, i + step.start_idx + m, n_odd, ext_mode) * c[m];
+            even[i] -= sum;
+          }
         }
       }
     }

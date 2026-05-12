@@ -1,4 +1,17 @@
 
+test_that(".generate_signal produces all D-J signals with correct length", {
+  dj_signals = c("doppler", "heavisine", "bumps", "blocks")
+  for (sig in dj_signals) {
+    x = rLifting:::.generate_signal(sig, n = 256)
+    expect_equal(length(x), 256)
+    expect_false(any(is.na(x)))
+  }
+  # blocks must be piecewise constant: almost all derivative values are 0
+  x_blocks = rLifting:::.generate_signal("blocks", n = 1024)
+  diffs = diff(x_blocks)
+  expect_gt(mean(diffs == 0), 0.95)
+})
+
 test_that("compute_adaptive_threshold returns correct list structure", {
   # Mock lwt object
   mock_lwt = list(

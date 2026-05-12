@@ -24,9 +24,11 @@ ilwt = function(lwt_obj, scheme = NULL) {
   ext_mode = if (!is.null(lwt_obj$extension)) lwt_obj$extension else "symmetric"
   ext_int = switch(
     ext_mode,
-    "symmetric" = 1L,
-    "periodic" = 2L,
-    "zero" = 3L,
+    "symmetric"    = 1L,
+    "periodic"     = 2L,
+    "zero"         = 3L,
+    "local_linear" = 4L,
+    "one_sided"    = 5L,
     1L
   )
 
