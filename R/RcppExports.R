@@ -5,28 +5,28 @@ compute_thresholds_cpp <- function(d1, max_level, alpha, beta) {
     .Call(`_rLifting_compute_thresholds_cpp`, d1, max_level, alpha, beta)
 }
 
-create_engine_cpp <- function(steps, norm, levels, window_size, ext_mode) {
-    .Call(`_rLifting_create_engine_cpp`, steps, norm, levels, window_size, ext_mode)
+create_engine_cpp <- function(steps, norm, levels, window_size, ext_mode, irregular, ll_k = 2L) {
+    .Call(`_rLifting_create_engine_cpp`, steps, norm, levels, window_size, ext_mode, irregular, ll_k)
 }
 
-process_sample_cpp <- function(engine_ptr, new_sample, alpha, beta, method, update_freq, step_iter) {
-    .Call(`_rLifting_process_sample_cpp`, engine_ptr, new_sample, alpha, beta, method, update_freq, step_iter)
+process_sample_cpp <- function(engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter) {
+    .Call(`_rLifting_process_sample_cpp`, engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter)
 }
 
-run_causal_batch_cpp <- function(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq) {
-    .Call(`_rLifting_run_causal_batch_cpp`, signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq)
+run_causal_batch_cpp <- function(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k = 2L) {
+    .Call(`_rLifting_run_causal_batch_cpp`, signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k)
 }
 
-ilwt_cpp <- function(coeffs_list, steps, norm, levels, ext_mode, original_len) {
-    .Call(`_rLifting_ilwt_cpp`, coeffs_list, steps, norm, levels, ext_mode, original_len)
+ilwt_cpp <- function(coeffs_list, steps, norm, levels, ext_mode, original_len, t, ll_k = 2L) {
+    .Call(`_rLifting_ilwt_cpp`, coeffs_list, steps, norm, levels, ext_mode, original_len, t, ll_k)
 }
 
-lwt_cpp <- function(signal, steps, norm, levels, ext_mode) {
-    .Call(`_rLifting_lwt_cpp`, signal, steps, norm, levels, ext_mode)
+lwt_cpp <- function(signal, steps, norm, levels, ext_mode, t, ll_k = 2L) {
+    .Call(`_rLifting_lwt_cpp`, signal, steps, norm, levels, ext_mode, t, ll_k)
 }
 
-denoise_offline_cpp <- function(signal, steps, norm, levels, alpha, beta, method, ext_mode) {
-    .Call(`_rLifting_denoise_offline_cpp`, signal, steps, norm, levels, alpha, beta, method, ext_mode)
+denoise_offline_cpp <- function(signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k = 2L) {
+    .Call(`_rLifting_denoise_offline_cpp`, signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k)
 }
 
 threshold_hard_cpp <- function(x, lambda) {
@@ -41,7 +41,7 @@ threshold_semisoft_cpp <- function(x, lambda) {
     .Call(`_rLifting_threshold_semisoft_cpp`, x, lambda)
 }
 
-apply_filter_cpp <- function(x, coeffs, start_idx, ext_mode) {
-    .Call(`_rLifting_apply_filter_cpp`, x, coeffs, start_idx, ext_mode)
+apply_filter_cpp <- function(x, coeffs, start_idx, ext_mode, ll_k) {
+    .Call(`_rLifting_apply_filter_cpp`, x, coeffs, start_idx, ext_mode, ll_k)
 }
 

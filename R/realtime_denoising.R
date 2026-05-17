@@ -14,9 +14,12 @@
 #' @param method Shrinkage method: "hard", "soft", "semisoft".
 #' @param extension Boundary handling ('symmetric', 'periodic', 'zero', 'local_linear').
 #' @param update_freq How often to recompute threshold statistics (default 1).
+#' @param irregular Logical. If TRUE, the returned closure accepts a second
+#'   argument \code{t_val} (the sample's time position) and applies
+#'   position-aware interpolation in the predict steps.
 #'
-#' @return A closure function \code{processor(new_sample)} that accepts
-#' a single numeric value and returns the filtered value immediately.
+#' @return A closure \code{processor(new_sample, t_val = NULL)} that accepts
+#' one sample (and optionally its time position) and returns the filtered value.
 #' @export
 new_wavelet_stream = function(
   scheme,
@@ -26,10 +29,20 @@ new_wavelet_stream = function(
   beta = 1.2,
   method = "semisoft",
   extension = "symmetric",
-  update_freq = 1
+  update_freq = 1,
+  irregular = FALSE,
+  ll_k = 4L
 ) {
 
   if (window_size < 8) stop("window_size must be at least 8.")
+  if (window_size %% 2L == 0L) window_size = window_size + 1L
+  if (extension == "local_linear" && ll_k > window_size)
+    warning(sprintf("ll_k (%d) > window_size (%d): clamped to n.", ll_k, window_size))
+  if (irregular) {
+    if (extension == "one_sided")
+      warning("extension 'one_sided' ignores irregular grid positions: Lagrange interpolation will not be applied. Use 'symmetric' or 'local_linear' for irregular-grid processing.")
+    .check_irregular_scheme(scheme)
+  }
 
   ext_int = switch(
     extension,
@@ -41,12 +54,14 @@ new_wavelet_stream = function(
     as.numeric(scheme$normalization),
     as.integer(levels),
     as.integer(window_size),
-    as.integer(ext_int)
+    as.integer(ext_int),
+    as.logical(irregular),
+    as.integer(ll_k)
   )
 
   step_iter = 0
 
-  processor = function(new_sample) {
+  processor = function(new_sample, t_val = NULL) {
     if (length(new_sample) != 1) {
       stop("Stream processor accepts only one sample at a time.")
     }
@@ -56,9 +71,12 @@ new_wavelet_stream = function(
       return(new_sample)
     }
 
+    t_cpp = if (is.null(t_val)) as.numeric(step_iter) else as.numeric(t_val)
+
     res = process_sample_cpp(
       engine_ptr,
       as.numeric(new_sample),
+      t_cpp,
       as.numeric(alpha),
       as.numeric(beta),
       as.character(method),
@@ -70,13 +88,13 @@ new_wavelet_stream = function(
     return(res)
   }
 
-  # Assign S3 class and attributes
   class(processor) = c("wavelet_stream", "function")
   attr(processor, "config") = list(
-    wavelet = scheme$wavelet,
+    wavelet    = scheme$wavelet,
     window_size = window_size,
-    levels = levels,
-    method = method
+    levels     = levels,
+    method     = method,
+    irregular  = irregular
   )
 
   return(processor)
@@ -113,6 +131,8 @@ print.wavelet_stream = function(x, ...) {
 #' @param method Thresholding method ("soft", "hard", "semisoft").
 #' @param extension Boundary treatment ('symmetric', 'periodic', 'zero', 'local_linear').
 #' @param update_freq Frequency of threshold updates.
+#' @param t Optional numeric vector of sample time positions (irregular grid).
+#'   Must be sorted and the same length as \code{signal}.
 #'
 #' @return Filtered vector (same length as input).
 #' @export
@@ -125,13 +145,29 @@ denoise_signal_causal = function(
   beta = 1.2,
   method = "semisoft",
   extension = "symmetric",
-  update_freq = 1
+  update_freq = 1,
+  t = NULL,
+  ll_k = 4L
 ) {
+
+  if (window_size %% 2L == 0L) window_size = window_size + 1L
+  if (extension == "local_linear" && ll_k > window_size)
+    warning(sprintf("ll_k (%d) > window_size (%d): clamped to n.", ll_k, window_size))
+
+  if (!is.null(t)) {
+    if (length(t) != length(signal)) stop("'t' must have the same length as 'signal'.")
+    if (is.unsorted(t))              stop("'t' must be sorted in increasing order.")
+    if (extension == "one_sided")
+      warning("extension 'one_sided' ignores irregular grid positions: Lagrange interpolation will not be applied. Use 'symmetric' or 'local_linear' for irregular-grid processing.")
+    .check_irregular_scheme(scheme)
+  }
 
   ext_int = switch(
     extension,
     "symmetric" = 1L, "periodic" = 2L, "zero" = 3L, "local_linear" = 4L, "one_sided" = 5L, 1L
   )
+
+  t_cpp = if (is.null(t)) numeric(0) else as.numeric(t)
 
   output = run_causal_batch_cpp(
     as.numeric(signal),
@@ -143,7 +179,9 @@ denoise_signal_causal = function(
     as.numeric(beta),
     as.character(method),
     as.integer(ext_int),
-    as.integer(update_freq)
+    as.integer(update_freq),
+    t_cpp,
+    as.integer(ll_k)
   )
 
   return(output)

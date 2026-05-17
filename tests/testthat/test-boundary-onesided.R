@@ -66,18 +66,18 @@ test_that("one_sided produces different boundary behaviour than symmetric", {
 # --- Noise robustness at boundary ---
 # one_sided should not extrapolate: replacing the second boundary sample
 # with extreme noise should have LESS impact on one_sided than on local_linear.
-test_that("one_sided is more noise-robust at boundary than local_linear", {
+test_that("one_sided is more noise-robust at boundary than 2-point local_linear", {
   set.seed(123)
   sch = lifting_scheme("cdf97")
   n   = 128
   x_clean = seq(0, 1, length.out = n)   # pure ramp
 
-  # Inject extreme noise only in the second sample (used by local_linear slope)
+  # Inject extreme noise only in the second sample (used by 2-point local_linear slope)
   x_noisy = x_clean
   x_noisy[2] = x_noisy[2] + 100
 
   res_ll = denoise_signal_offline(x_noisy, sch, levels = 2,
-                                  extension = "local_linear")
+                                  extension = "local_linear", ll_k = 2L)
   res_os = denoise_signal_offline(x_noisy, sch, levels = 2,
                                   extension = "one_sided")
 
@@ -103,6 +103,34 @@ test_that("one_sided causal mode has no look-ahead leakage", {
   for (i in 33:64) p2(rnorm(1))
 
   expect_equal(out1, out2)
+})
+
+# --- Warning: one_sided + irregular grid ---
+test_that("one_sided warns when t is supplied (irregular grid)", {
+  sch = lifting_scheme("cdf53")
+  n   = 64
+  x   = rnorm(n)
+  t   = cumsum(c(0, abs(rnorm(n - 1, mean = 1, sd = 0.4))))
+
+  expect_warning(lwt(x, sch, extension = "one_sided", t = t),
+                 "one_sided")
+  expect_warning(denoise_signal_offline(x, sch, extension = "one_sided", t = t),
+                 "one_sided")
+  expect_warning(denoise_signal_causal(x, sch, extension = "one_sided", t = t,
+                                       window_size = 31),
+                 "one_sided")
+  expect_warning(new_wavelet_stream(sch, extension = "one_sided", irregular = TRUE),
+                 "one_sided")
+})
+
+test_that("one_sided does not warn on regular grid (no t)", {
+  sch = lifting_scheme("cdf53")
+  x   = rnorm(64)
+
+  expect_no_warning(lwt(x, sch, extension = "one_sided"))
+  expect_no_warning(denoise_signal_offline(x, sch, extension = "one_sided"))
+  expect_no_warning(new_wavelet_stream(sch, extension = "one_sided",
+                                       irregular = FALSE))
 })
 
 # --- Performance: overhead must be negligible ---

@@ -32,13 +32,18 @@ ilwt = function(lwt_obj, scheme = NULL) {
     1L
   )
 
+  t_cpp  = if (!is.null(lwt_obj$t)) as.numeric(lwt_obj$t) else numeric(0)
+  ll_k   = if (!is.null(lwt_obj$ll_k)) as.integer(lwt_obj$ll_k) else 2L
+
   res = ilwt_cpp(
     lwt_obj$coeffs,
     scheme$steps,
     as.numeric(scheme$normalization),
     as.integer(lwt_obj$levels),
     as.integer(ext_int),
-    as.integer(lwt_obj$original_len)
+    as.integer(lwt_obj$original_len),
+    t_cpp,
+    ll_k
   )
 
   return(res)

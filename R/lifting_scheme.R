@@ -29,10 +29,37 @@ lifting_scheme = function(
     norm_factors = config$norm
   }
 
+  steps = lapply(steps, function(s) {
+    if (is.null(s$degree)) {
+      s$degree = if (s$type == "predict" && abs(sum(s$coeffs) - 1) < 1e-10)
+        as.integer(length(s$coeffs) - 1L)
+      else
+        -1L
+    }
+    s
+  })
+
   structure(
     list(wavelet = wavelet, steps = steps, normalization = norm_factors),
     class = "lifting_scheme"
   )
+}
+
+#' Warn if a scheme has no irregular-grid support for any predict step.
+#' @keywords internal
+.check_irregular_scheme = function(scheme) {
+  has_support = any(vapply(scheme$steps, function(s)
+    s$type == "predict" && !is.null(s$degree) && s$degree >= 0L,
+    logical(1)))
+  if (!has_support)
+    warning(
+      "Wavelet '", scheme$wavelet, "' has no interpolating predict steps. ",
+      "Using fixed coefficients for irregular grid — reconstruction is exact ",
+      "but approximation order may be suboptimal. ",
+      "Use an interpolating wavelet (haar, cdf53, dd4) for best results.",
+      call. = FALSE
+    )
+  invisible(NULL)
 }
 
 #' Implements factorizations based on Daubechies and Sweldens (1998).
@@ -153,7 +180,8 @@ lift_step = function(
   type = c("predict", "update"),
   coeffs,
   start_idx = NULL,
-  position = "center"
+  position = "center",
+  degree = NULL
 ) {
 
   type = match.arg(type)
@@ -169,7 +197,15 @@ lift_step = function(
     }
   }
 
-  list(type = type, coeffs = coeffs, start_idx = start_idx)
+  if (is.null(degree)) {
+    degree = if (type == "predict" && abs(sum(coeffs) - 1) < 1e-10)
+      as.integer(n - 1L)
+    else
+      -1L
+  }
+
+  list(type = type, coeffs = coeffs, start_idx = start_idx,
+       degree = as.integer(degree))
 }
 
 #' Create a custom wavelet

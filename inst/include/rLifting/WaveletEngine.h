@@ -20,31 +20,37 @@ public:
   int levels;
   int window_size;
   int ext_mode;
+  int ll_k;
+  bool irregular;
 
   // Buffer State
   std::vector<double> ring_buffer;
-  int head;  // Current write index
-  int count; // Number of processed samples (for warming)
+  std::vector<double> ring_buffer_t;  // parallel t positions (irregular mode)
+  int head;
+  int count;
 
   // Workspaces (Zero-Allocation)
-  // Pre-allocated vectors to avoid heap allocation during the loop
   std::vector<double> work_signal;
+  std::vector<double> work_t;                      // linearized t window
   std::vector<std::vector<double>> work_approx;
   std::vector<std::vector<double>> work_detail;
+  std::vector<std::vector<double>> work_t_approx;  // t at each level (t_even)
+  std::vector<std::vector<double>> work_t_detail;  // t at each level (t_odd)
 
   // Adaptive Threshold Cache
   std::vector<double> current_lambdas;
 
   // Constructor
   WaveletEngine(List r_steps, NumericVector norm, int lvl, int w_size,
-                int mode) {
+                int mode, bool irreg = false, int k = 2) {
     window_size = w_size;
     levels = lvl;
     ext_mode = mode;
+    ll_k = k;
     norm_approx = norm[0];
     norm_detail = norm[1];
+    irregular = irreg;
 
-    // Parse steps
     int n_steps = r_steps.size();
     for (int i = 0; i < n_steps; i++) {
       List s = r_steps[i];
@@ -52,17 +58,15 @@ public:
       step.type = as<std::string>(s["type"]);
       step.coeffs = as<std::vector<double>>(s["coeffs"]);
       step.start_idx = s["start_idx"];
+      step.degree = s.containsElementNamed("degree") ? (int)s["degree"] : -1;
       steps.push_back(step);
     }
 
-    // Memory Allocation (State)
     ring_buffer.resize(window_size, 0.0);
     head = 0;
     count = 0;
 
-    // Workspaces Allocation
     work_signal.resize(window_size);
-
     work_approx.resize(levels + 1);
     work_detail.resize(levels + 1);
     current_lambdas.resize(levels, 0.0);
@@ -73,24 +77,32 @@ public:
       work_detail[j].resize(current_len);
       current_len = (current_len + 1) / 2;
     }
+
+    if (irregular) {
+      ring_buffer_t.resize(window_size, 0.0);
+      work_t.resize(window_size, 0.0);
+      work_t_approx.resize(levels + 1);
+      work_t_detail.resize(levels);
+      current_len = window_size;
+      for (int j = 0; j <= levels; j++) {
+        work_t_approx[j].resize(current_len, 0.0);
+        if (j < levels) work_t_detail[j].resize(current_len / 2, 0.0);
+        current_len = (current_len + 1) / 2;
+      }
+    }
   }
 
-  // Helper Wrapper for inline utils function
   inline double get_val(const std::vector<double> &x, int i, int n) {
-    return get_val_safe(x, i, n, ext_mode);
+    return get_val_safe(x, i, n, ext_mode, ll_k);
   }
 
-  // Update Thresholds (Statistical Calculation)
   void update_thresholds(double alpha, double beta) {
     std::vector<double> &d1 = work_detail[0];
     int n1 = d1.size();
-    if (n1 == 0)
-      return;
+    if (n1 == 0) return;
 
-    // Calculate MAD
     std::vector<double> abs_d1(n1);
-    for (int i = 0; i < n1; i++)
-      abs_d1[i] = std::abs(d1[i]);
+    for (int i = 0; i < n1; i++) abs_d1[i] = std::abs(d1[i]);
 
     int mid = n1 / 2;
     std::nth_element(abs_d1.begin(), abs_d1.begin() + mid, abs_d1.end());
@@ -102,7 +114,6 @@ public:
       return;
     }
 
-    // Recursive Lambda Calculation
     double lambda_1 = beta * sigma * std::sqrt(2.0 * std::log((double)n1));
     current_lambdas[0] = lambda_1;
 
@@ -115,54 +126,73 @@ public:
   }
 
   // Core Processing Loop
-  double push_and_process(double new_val, double alpha, double beta,
-                          std::string method, int update_freq, int step_iter) {
-    // Ingestion into Ring Buffer
+  double push_and_process(double new_val, double t_val, double alpha,
+                          double beta, std::string method, int update_freq,
+                          int step_iter) {
     ring_buffer[head] = new_val;
+    if (irregular) ring_buffer_t[head] = t_val;
     head = (head + 1) % window_size;
-    if (count < window_size)
-      count++;
+    if (count < window_size) count++;
 
-    // Warming phase: Return raw data until buffer is full
-    if (count < window_size)
-      return new_val;
+    if (count < window_size) return new_val;
 
     bool use_os = (ext_mode == 5);
 
-    // Linearization (Ring -> Flat)
-    // Copy required to ensure contiguity for the Transform
-    for (int i = 0; i < window_size; i++) {
+    // Linearize ring buffer
+    for (int i = 0; i < window_size; i++)
       work_signal[i] = ring_buffer[(head + i) % window_size];
-    }
     work_approx[0] = work_signal;
+
+    if (irregular) {
+      for (int i = 0; i < window_size; i++)
+        work_t[i] = ring_buffer_t[(head + i) % window_size];
+      work_t_approx[0] = work_t;
+    }
 
     // Multi-Level Forward Decomposition
     for (int j = 0; j < levels; j++) {
       const std::vector<double> &input = work_approx[j];
       std::vector<double> &even = work_approx[j + 1];
-      std::vector<double> &odd = work_detail[j];
+      std::vector<double> &odd  = work_detail[j];
 
       int n = input.size();
       int n_even = (n + 1) / 2;
-      int n_odd = n / 2;
+      int n_odd  = n / 2;
 
       even.resize(n_even);
       odd.resize(n_odd);
 
-      // Lazy Split
-      for (int i = 0; i < n_even; i++)
-        even[i] = input[2 * i];
-      for (int i = 0; i < n_odd; i++)
-        odd[i] = input[2 * i + 1];
+      for (int i = 0; i < n_even; i++) even[i] = input[2 * i];
+      for (int i = 0; i < n_odd;  i++) odd[i]  = input[2 * i + 1];
 
-      // Lifting Steps
+      if (irregular) {
+        const std::vector<double> &t_cur = work_t_approx[j];
+        work_t_approx[j + 1].resize(n_even);
+        work_t_detail[j].resize(n_odd);
+        for (int i = 0; i < n_even; i++) work_t_approx[j + 1][i] = t_cur[2 * i];
+        for (int i = 0; i < n_odd;  i++) work_t_detail[j][i]     = t_cur[2 * i + 1];
+      }
+
       for (const auto &step : steps) {
         int k_filt = (int)step.coeffs.size();
         const double* c = step.coeffs.data();
+
         if (step.type == "predict") {
           if (use_os) {
             for (int i = 0; i < n_odd; i++)
               odd[i] -= onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+          } else if (irregular && step.degree >= 0) {
+            const std::vector<double> &t_even = work_t_approx[j + 1];
+            const std::vector<double> &t_odd  = work_t_detail[j];
+            std::vector<double> x_nbr(k_filt), t_nbr(k_filt);
+            for (int i = 0; i < n_odd; i++) {
+              for (int m = 0; m < k_filt; m++) {
+                int idx = i + step.start_idx + m;
+                x_nbr[m] = get_val_safe(even, idx, n_even, ext_mode, ll_k);
+                t_nbr[m] = get_t_extrap(t_even, idx, n_even);
+              }
+              odd[i] -= interp_predict(x_nbr, t_nbr, k_filt, t_odd[i]);
+            }
           } else {
             for (int i = 0; i < n_odd; i++) {
               double sum = 0.0;
@@ -186,26 +216,21 @@ public:
         }
       }
 
-      // Normalization
-      for (int i = 0; i < n_even; i++)
-        even[i] *= norm_approx;
-      for (int i = 0; i < n_odd; i++)
-        odd[i] *= norm_detail;
+      for (int i = 0; i < n_even; i++) even[i] *= norm_approx;
+      for (int i = 0; i < n_odd;  i++) odd[i]  *= norm_detail;
     }
 
     // Thresholding
-    // Lazy Update of thresholds
-    if (step_iter % update_freq == 0)
-      update_thresholds(alpha, beta);
+    if (step_iter % update_freq == 0) update_thresholds(alpha, beta);
 
     for (int j = 0; j < levels; j++) {
-      double lam = current_lambdas[j];
+      double lam    = current_lambdas[j];
       double lam_sq = lam * lam;
       std::vector<double> &det = work_detail[j];
       int n_det = det.size();
 
       for (int i = 0; i < n_det; i++) {
-        double val = det[i];
+        double val     = det[i];
         double abs_val = std::abs(val);
         if (abs_val < lam) {
           det[i] = 0.0;
@@ -216,7 +241,6 @@ public:
             double s = std::sqrt(val * val - lam_sq);
             det[i] = (val > 0) ? s : -s;
           }
-          // hard: keep unchanged
         }
       }
     }
@@ -224,30 +248,40 @@ public:
     // Inverse Reconstruction (Backward)
     for (int j = levels - 1; j >= 0; j--) {
       std::vector<double> &even = work_approx[j + 1];
-      std::vector<double> &odd = work_detail[j];
+      std::vector<double> &odd  = work_detail[j];
 
       int n_even = even.size();
-      int n_odd = odd.size();
+      int n_odd  = odd.size();
 
-      // De-normalization
-      for (int i = 0; i < (int)even.size(); i++)
-        even[i] /= norm_approx;
-      for (int i = 0; i < (int)odd.size(); i++)
-        odd[i] /= norm_detail;
+      for (int i = 0; i < n_even; i++) even[i] /= norm_approx;
+      for (int i = 0; i < n_odd;  i++) odd[i]  /= norm_detail;
 
-      // Reverse Lifting Steps
+      // t positions for this level are stored from the forward pass
       for (int k = (int)steps.size() - 1; k >= 0; k--) {
         const auto &step = steps[k];
         int k_filt = (int)step.coeffs.size();
         const double* c = step.coeffs.data();
         int sz_even = (int)even.size();
         int sz_odd  = (int)odd.size();
+
         if (step.type == "predict") {
           if (use_os) {
             for (int i = 0; i < n_odd; i++)
               odd[i] += onesided_conv(even, sz_even, c, k_filt, step.start_idx, i);
+          } else if (irregular && step.degree >= 0) {
+            const std::vector<double> &t_even = work_t_approx[j + 1];
+            const std::vector<double> &t_odd  = work_t_detail[j];
+            std::vector<double> x_nbr(k_filt), t_nbr(k_filt);
+            for (int i = 0; i < sz_odd; i++) {
+              for (int m = 0; m < k_filt; m++) {
+                int idx = i + step.start_idx + m;
+                x_nbr[m] = get_val_safe(even, idx, sz_even, ext_mode, ll_k);
+                t_nbr[m] = get_t_extrap(t_even, idx, sz_even);
+              }
+              odd[i] += interp_predict(x_nbr, t_nbr, k_filt, t_odd[i]);
+            }
           } else {
-            for (int i = 0; i < n_odd; i++) {
+            for (int i = 0; i < sz_odd; i++) {
               double sum = 0.0;
               for (int m = 0; m < k_filt; m++)
                 sum += get_val(even, i + step.start_idx + m, sz_even) * c[m];
@@ -269,19 +303,13 @@ public:
         }
       }
 
-      // Merge (Inverse Lazy)
       int target_size = (int)work_approx[j].size();
       for (int i = 0; i < (int)even.size(); i++)
-        if (2 * i < target_size)
-          work_approx[j][2 * i] = even[i];
+        if (2 * i < target_size) work_approx[j][2 * i] = even[i];
       for (int i = 0; i < (int)odd.size(); i++)
-        if (2 * i + 1 < target_size)
-          work_approx[j][2 * i + 1] = odd[i];
+        if (2 * i + 1 < target_size) work_approx[j][2 * i + 1] = odd[i];
     }
 
-    // Return Causal Result
-    // The fully reconstructed signal is in work_approx[0].
-    // We return the last valid sample (causal).
     return work_approx[0][window_size - 1];
   }
 };

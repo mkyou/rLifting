@@ -21,8 +21,21 @@ denoise_signal_offline = function(
   beta = 1.2,
   levels = 3,
   method = "semisoft",
-  extension = "symmetric"
+  extension = "symmetric",
+  t = NULL,
+  ll_k = 4L
 ) {
+
+  if (extension == "local_linear" && ll_k > length(signal))
+    warning(sprintf("ll_k (%d) > signal length (%d): clamped to n.", ll_k, length(signal)))
+
+  if (!is.null(t)) {
+    if (length(t) != length(signal)) stop("'t' must have the same length as 'signal'.")
+    if (is.unsorted(t))              stop("'t' must be sorted in increasing order.")
+    if (extension == "one_sided")
+      warning("extension 'one_sided' ignores irregular grid positions: Lagrange interpolation will not be applied. Use 'symmetric' or 'local_linear' for irregular-grid processing.")
+    .check_irregular_scheme(scheme)
+  }
 
   ext_int = switch(
     extension,
@@ -34,6 +47,8 @@ denoise_signal_offline = function(
     1L
   )
 
+  t_cpp = if (is.null(t)) numeric(0) else as.numeric(t)
+
   res = denoise_offline_cpp(
     as.numeric(signal),
     scheme$steps,
@@ -42,7 +57,9 @@ denoise_signal_offline = function(
     as.numeric(alpha),
     as.numeric(beta),
     as.character(method),
-    as.integer(ext_int)
+    as.integer(ext_int),
+    t_cpp,
+    as.integer(ll_k)
   )
 
   return(res)

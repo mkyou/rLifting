@@ -19,3 +19,8 @@ docs
 CRAN-SUBMISSION
 inst/doc
 vignettes/*.R
+# Benchmark checkpoints and logs
+data/tmp_*/
+logs/
+# Generated test artefacts
+tests/testthat/Rplots.pdf

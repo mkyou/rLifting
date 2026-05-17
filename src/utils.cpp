@@ -15,7 +15,8 @@ using namespace Rcpp;
        NumericVector x,
        NumericVector coeffs,
        int start_idx,
-       int ext_mode
+       int ext_mode,
+       int ll_k
  ) {
     int n = x.size();
     int k = coeffs.size();
@@ -34,7 +35,7 @@ using namespace Rcpp;
        double sum = 0.0;
        for (int j = 0; j < k; j++) {
           int read_idx = i + start_idx + j;
-          sum += get_val_safe(x_std, read_idx, n, ext_mode) * coeffs[j];
+          sum += get_val_safe(x_std, read_idx, n, ext_mode, ll_k) * coeffs[j];
        }
        y[i] = sum;
     }

@@ -154,9 +154,12 @@ vignette("introduction", package = "rLifting")
 
 Based on the current development of the FATE estimator research, the following features are planned:
 
-- **Irregular grids:** native handling of non-equispaced data (Second Generation Wavelets) without interpolation.
 - **Multivariate denoising:** joint denoising of correlated signals to incorporate covariance structure.
-- **Boundary refinements:** implement local linear predictors for edge handling to improve reconstruction at signal boundaries (crucial for real-time causal estimation).
+- **Coefficient access:** expose intermediate LWT coefficients as a structured output (e.g. `result$coefficients`) from all pipeline functions, enabling inspection and custom post-processing without re-running the transform.
+
+A technical documentation series is in progress under `inst/notes/`, covering the internal design of each subsystem (operation modes, boundary handling, irregular grids, the WaveletEngine ring buffer, and the adaptive threshold). A companion `implementation/` section will document the computational decisions behind the package's performance.
+
+> **Note:** the performance figures in this README and in `inst/notes/` will be revised once the full benchmark suite (regular and irregular grids, all competing packages) is complete.
 
 ### License
 

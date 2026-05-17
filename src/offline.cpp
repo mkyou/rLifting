@@ -41,12 +41,14 @@ std::vector<double> compute_thresholds_internal(const std::vector<double> &d1,
 // Unified Offline Denoising
 //
 // Executes LWT -> threshold -> ILWT entirely in C++ without R overhead.
+// When t is non-empty (length == signal length), position-aware Lagrange
+// interpolation is applied in predict steps with degree >= 0.
 // @keywords internal
 // [[Rcpp::export]]
 NumericVector denoise_offline_cpp(NumericVector signal, List steps,
                                   NumericVector norm, int levels, double alpha,
                                   double beta, std::string method,
-                                  int ext_mode) {
+                                  int ext_mode, NumericVector t, int ll_k = 2) {
   // Setup & Parsing
   std::vector<LiftingStep> cpp_steps;
   int n_steps = steps.size();
@@ -56,15 +58,22 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
     step.type = as<std::string>(s["type"]);
     step.coeffs = as<std::vector<double>>(s["coeffs"]);
     step.start_idx = s["start_idx"];
+    step.degree = s.containsElementNamed("degree") ? (int)s["degree"] : -1;
     cpp_steps.push_back(step);
   }
 
   double norm_approx = norm[0];
   double norm_detail = norm[1];
 
+  bool irregular = ((int)t.size() == signal.size());
+  bool use_os = (ext_mode == 5);
+
   std::vector<double> current_app = as<std::vector<double>>(signal);
   std::vector<std::vector<double>> details(levels);
-  bool use_os = (ext_mode == 5);
+
+  // Per-level t positions: t_levels[j] holds positions before the j-th split.
+  std::vector<std::vector<double>> t_levels(levels + 1);
+  if (irregular) t_levels[0] = as<std::vector<double>>(t);
 
   // FORWARD LWT
   for (int j = 0; j < levels; j++) {
@@ -75,10 +84,17 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
     std::vector<double> even(n_even);
     std::vector<double> odd(n_odd);
 
-    for (int i = 0; i < n_even; i++)
-      even[i] = current_app[2 * i];
-    for (int i = 0; i < n_odd; i++)
-      odd[i] = current_app[2 * i + 1];
+    for (int i = 0; i < n_even; i++) even[i] = current_app[2 * i];
+    for (int i = 0; i < n_odd; i++)  odd[i]  = current_app[2 * i + 1];
+
+    std::vector<double> t_even, t_odd;
+    if (irregular) {
+      const std::vector<double>& t_cur = t_levels[j];
+      t_even.resize(n_even); t_odd.resize(n_odd);
+      for (int i = 0; i < n_even; i++) t_even[i] = t_cur[2 * i];
+      for (int i = 0; i < n_odd;  i++) t_odd[i]  = t_cur[2 * i + 1];
+      t_levels[j + 1] = t_even;
+    }
 
     for (const auto &step : cpp_steps) {
       int k_filt = (int)step.coeffs.size();
@@ -87,11 +103,21 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
         if (use_os) {
           for (int i = 0; i < n_odd; i++)
             odd[i] -= onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+        } else if (irregular && step.degree >= 0) {
+          std::vector<double> x_nbr(k_filt), t_nbr(k_filt);
+          for (int i = 0; i < n_odd; i++) {
+            for (int m = 0; m < k_filt; m++) {
+              int idx = i + step.start_idx + m;
+              x_nbr[m] = get_val_safe(even, idx, n_even, ext_mode, ll_k);
+              t_nbr[m] = get_t_extrap(t_even, idx, n_even);
+            }
+            odd[i] -= interp_predict(x_nbr, t_nbr, k_filt, t_odd[i]);
+          }
         } else {
           for (int i = 0; i < n_odd; i++) {
             double sum = 0.0;
             for (int k = 0; k < k_filt; k++)
-              sum += get_val_safe(even, i + step.start_idx + k, n_even, ext_mode) * c[k];
+              sum += get_val_safe(even, i + step.start_idx + k, n_even, ext_mode, ll_k) * c[k];
             odd[i] -= sum;
           }
         }
@@ -103,17 +129,15 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
           for (int i = 0; i < n_even; i++) {
             double sum = 0.0;
             for (int k = 0; k < k_filt; k++)
-              sum += get_val_safe(odd, i + step.start_idx + k, n_odd, ext_mode) * c[k];
+              sum += get_val_safe(odd, i + step.start_idx + k, n_odd, ext_mode, ll_k) * c[k];
             even[i] += sum;
           }
         }
       }
     }
 
-    for (int i = 0; i < n_even; i++)
-      even[i] *= norm_approx;
-    for (int i = 0; i < n_odd; i++)
-      odd[i] *= norm_detail;
+    for (int i = 0; i < n_even; i++) even[i] *= norm_approx;
+    for (int i = 0; i < n_odd; i++)  odd[i]  *= norm_detail;
 
     details[j] = odd;
     current_app = even;
@@ -152,27 +176,45 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
     std::vector<double> &even = current_app;
     std::vector<double> &odd = details[j];
 
-    for (int i = 0; i < (int)even.size(); i++)
-      even[i] /= norm_approx;
-    for (int i = 0; i < (int)odd.size(); i++)
-      odd[i] /= norm_detail;
+    for (int i = 0; i < (int)even.size(); i++) even[i] /= norm_approx;
+    for (int i = 0; i < (int)odd.size();  i++) odd[i]  /= norm_detail;
+
+    std::vector<double> t_even, t_odd;
+    if (irregular) {
+      const std::vector<double>& t_cur = t_levels[j];
+      int n_cur = (int)t_cur.size();
+      int n_e = (n_cur + 1) / 2, n_o = n_cur / 2;
+      t_even.resize(n_e); t_odd.resize(n_o);
+      for (int i = 0; i < n_e; i++) t_even[i] = t_cur[2 * i];
+      for (int i = 0; i < n_o; i++) t_odd[i]  = t_cur[2 * i + 1];
+    }
 
     for (int k = (int)cpp_steps.size() - 1; k >= 0; k--) {
       const auto &step = cpp_steps[k];
       int k_filt = (int)step.coeffs.size();
       int n_even = (int)even.size();
-      int n_odd = (int)odd.size();
-
+      int n_odd  = (int)odd.size();
       const double* c = step.coeffs.data();
+
       if (step.type == "predict") {
         if (use_os) {
           for (int i = 0; i < n_odd; i++)
             odd[i] += onesided_conv(even, n_even, c, k_filt, step.start_idx, i);
+        } else if (irregular && step.degree >= 0) {
+          std::vector<double> x_nbr(k_filt), t_nbr(k_filt);
+          for (int i = 0; i < n_odd; i++) {
+            for (int m = 0; m < k_filt; m++) {
+              int idx = i + step.start_idx + m;
+              x_nbr[m] = get_val_safe(even, idx, n_even, ext_mode, ll_k);
+              t_nbr[m] = get_t_extrap(t_even, idx, n_even);
+            }
+            odd[i] += interp_predict(x_nbr, t_nbr, k_filt, t_odd[i]);
+          }
         } else {
           for (int i = 0; i < n_odd; i++) {
             double sum = 0.0;
             for (int m = 0; m < k_filt; m++)
-              sum += get_val_safe(even, i + step.start_idx + m, n_even, ext_mode) * c[m];
+              sum += get_val_safe(even, i + step.start_idx + m, n_even, ext_mode, ll_k) * c[m];
             odd[i] += sum;
           }
         }
@@ -184,7 +226,7 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
           for (int i = 0; i < n_even; i++) {
             double sum = 0.0;
             for (int m = 0; m < k_filt; m++)
-              sum += get_val_safe(odd, i + step.start_idx + m, n_odd, ext_mode) * c[m];
+              sum += get_val_safe(odd, i + step.start_idx + m, n_odd, ext_mode, ll_k) * c[m];
             even[i] -= sum;
           }
         }
@@ -192,17 +234,14 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
     }
 
     std::vector<double> merged(even.size() + odd.size());
-    for (int i = 0; i < (int)even.size(); i++)
-      merged[2 * i] = even[i];
-    for (int i = 0; i < (int)odd.size(); i++)
-      merged[2 * i + 1] = odd[i];
+    for (int i = 0; i < (int)even.size(); i++) merged[2 * i]     = even[i];
+    for (int i = 0; i < (int)odd.size();  i++) merged[2 * i + 1] = odd[i];
 
     current_app = merged;
   }
 
-  if ((int)current_app.size() > original_len) {
+  if ((int)current_app.size() > original_len)
     current_app.resize(original_len);
-  }
 
   return wrap(current_app);
 }
