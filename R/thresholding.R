@@ -27,6 +27,23 @@ threshold_soft = function(x, lambda) {
   threshold_soft_cpp(as.numeric(x), as.numeric(lambda))
 }
 
+#' SCAD Shrinkage (Antoniadis & Fan, 2001)
+#'
+#' Smoothly Clipped Absolute Deviation shrinkage. Three-region rule with
+#' continuity at lambda, 2*lambda and a*lambda. Identity above a*lambda
+#' eliminates the bias that soft thresholding imposes on large coefficients,
+#' while keeping sparsity in the zero region.
+#'
+#' @param x Vector of coefficients.
+#' @param lambda Positive threshold value.
+#' @param a Shape parameter, a > 2. Default 3.7 (Fan-Li canonical).
+#'
+#' @return Processed vector.
+#' @export
+threshold_scad = function(x, lambda, a = 3.7) {
+  threshold_scad_cpp(as.numeric(x), as.numeric(lambda), as.numeric(a))
+}
+
 #' Semisoft Shrinkage (Hyperbolic)
 #'
 #' Implementation based on Liu et al. (2014).
@@ -51,12 +68,13 @@ threshold_semisoft = function(x, lambda) {
 #'
 #' @return Numeric vector of the same length as \code{x} with thresholded coefficients.
 #' @export
-threshold = function(x, lambda, method = "soft") {
+threshold = function(x, lambda, method = "soft", a = 3.7) {
   switch(
     method,
     hard = threshold_hard(x, lambda),
     soft = threshold_soft(x, lambda),
     semisoft = threshold_semisoft(x, lambda),
+    scad = threshold_scad(x, lambda, a = a),
     stop("Unknown threshold method")
   )
 }

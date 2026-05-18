@@ -42,8 +42,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // process_sample_cpp
-double process_sample_cpp(SEXP engine_ptr, double new_sample, double t_val, double alpha, double beta, std::string method, int update_freq, int step_iter);
-RcppExport SEXP _rLifting_process_sample_cpp(SEXP engine_ptrSEXP, SEXP new_sampleSEXP, SEXP t_valSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP update_freqSEXP, SEXP step_iterSEXP) {
+double process_sample_cpp(SEXP engine_ptr, double new_sample, double t_val, double alpha, double beta, std::string method, int update_freq, int step_iter, std::string threshold_method);
+RcppExport SEXP _rLifting_process_sample_cpp(SEXP engine_ptrSEXP, SEXP new_sampleSEXP, SEXP t_valSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP update_freqSEXP, SEXP step_iterSEXP, SEXP threshold_methodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -55,13 +55,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type method(methodSEXP);
     Rcpp::traits::input_parameter< int >::type update_freq(update_freqSEXP);
     Rcpp::traits::input_parameter< int >::type step_iter(step_iterSEXP);
-    rcpp_result_gen = Rcpp::wrap(process_sample_cpp(engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter));
+    Rcpp::traits::input_parameter< std::string >::type threshold_method(threshold_methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(process_sample_cpp(engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter, threshold_method));
     return rcpp_result_gen;
 END_RCPP
 }
 // run_causal_batch_cpp
-NumericVector run_causal_batch_cpp(NumericVector signal, List steps, NumericVector norm, int levels, int window_size, double alpha, double beta, std::string method, int ext_mode, int update_freq, NumericVector t, int ll_k);
-RcppExport SEXP _rLifting_run_causal_batch_cpp(SEXP signalSEXP, SEXP stepsSEXP, SEXP normSEXP, SEXP levelsSEXP, SEXP window_sizeSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP ext_modeSEXP, SEXP update_freqSEXP, SEXP tSEXP, SEXP ll_kSEXP) {
+NumericVector run_causal_batch_cpp(NumericVector signal, List steps, NumericVector norm, int levels, int window_size, double alpha, double beta, std::string method, int ext_mode, int update_freq, NumericVector t, int ll_k, std::string threshold_method);
+RcppExport SEXP _rLifting_run_causal_batch_cpp(SEXP signalSEXP, SEXP stepsSEXP, SEXP normSEXP, SEXP levelsSEXP, SEXP window_sizeSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP ext_modeSEXP, SEXP update_freqSEXP, SEXP tSEXP, SEXP ll_kSEXP, SEXP threshold_methodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -77,7 +78,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type update_freq(update_freqSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type t(tSEXP);
     Rcpp::traits::input_parameter< int >::type ll_k(ll_kSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_causal_batch_cpp(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k));
+    Rcpp::traits::input_parameter< std::string >::type threshold_method(threshold_methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_causal_batch_cpp(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k, threshold_method));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -117,8 +119,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // denoise_offline_cpp
-NumericVector denoise_offline_cpp(NumericVector signal, List steps, NumericVector norm, int levels, double alpha, double beta, std::string method, int ext_mode, NumericVector t, int ll_k);
-RcppExport SEXP _rLifting_denoise_offline_cpp(SEXP signalSEXP, SEXP stepsSEXP, SEXP normSEXP, SEXP levelsSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP ext_modeSEXP, SEXP tSEXP, SEXP ll_kSEXP) {
+NumericVector denoise_offline_cpp(NumericVector signal, List steps, NumericVector norm, int levels, double alpha, double beta, std::string method, int ext_mode, NumericVector t, int ll_k, std::string threshold_method);
+RcppExport SEXP _rLifting_denoise_offline_cpp(SEXP signalSEXP, SEXP stepsSEXP, SEXP normSEXP, SEXP levelsSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP methodSEXP, SEXP ext_modeSEXP, SEXP tSEXP, SEXP ll_kSEXP, SEXP threshold_methodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -132,7 +134,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type ext_mode(ext_modeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type t(tSEXP);
     Rcpp::traits::input_parameter< int >::type ll_k(ll_kSEXP);
-    rcpp_result_gen = Rcpp::wrap(denoise_offline_cpp(signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k));
+    Rcpp::traits::input_parameter< std::string >::type threshold_method(threshold_methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(denoise_offline_cpp(signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k, threshold_method));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -172,6 +175,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// threshold_scad_cpp
+NumericVector threshold_scad_cpp(NumericVector x, double lambda, double a);
+RcppExport SEXP _rLifting_threshold_scad_cpp(SEXP xSEXP, SEXP lambdaSEXP, SEXP aSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    rcpp_result_gen = Rcpp::wrap(threshold_scad_cpp(x, lambda, a));
+    return rcpp_result_gen;
+END_RCPP
+}
 // apply_filter_cpp
 NumericVector apply_filter_cpp(NumericVector x, NumericVector coeffs, int start_idx, int ext_mode, int ll_k);
 RcppExport SEXP _rLifting_apply_filter_cpp(SEXP xSEXP, SEXP coeffsSEXP, SEXP start_idxSEXP, SEXP ext_modeSEXP, SEXP ll_kSEXP) {
@@ -191,14 +207,15 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_rLifting_compute_thresholds_cpp", (DL_FUNC) &_rLifting_compute_thresholds_cpp, 4},
     {"_rLifting_create_engine_cpp", (DL_FUNC) &_rLifting_create_engine_cpp, 7},
-    {"_rLifting_process_sample_cpp", (DL_FUNC) &_rLifting_process_sample_cpp, 8},
-    {"_rLifting_run_causal_batch_cpp", (DL_FUNC) &_rLifting_run_causal_batch_cpp, 12},
+    {"_rLifting_process_sample_cpp", (DL_FUNC) &_rLifting_process_sample_cpp, 9},
+    {"_rLifting_run_causal_batch_cpp", (DL_FUNC) &_rLifting_run_causal_batch_cpp, 13},
     {"_rLifting_ilwt_cpp", (DL_FUNC) &_rLifting_ilwt_cpp, 8},
     {"_rLifting_lwt_cpp", (DL_FUNC) &_rLifting_lwt_cpp, 7},
-    {"_rLifting_denoise_offline_cpp", (DL_FUNC) &_rLifting_denoise_offline_cpp, 10},
+    {"_rLifting_denoise_offline_cpp", (DL_FUNC) &_rLifting_denoise_offline_cpp, 11},
     {"_rLifting_threshold_hard_cpp", (DL_FUNC) &_rLifting_threshold_hard_cpp, 2},
     {"_rLifting_threshold_soft_cpp", (DL_FUNC) &_rLifting_threshold_soft_cpp, 2},
     {"_rLifting_threshold_semisoft_cpp", (DL_FUNC) &_rLifting_threshold_semisoft_cpp, 2},
+    {"_rLifting_threshold_scad_cpp", (DL_FUNC) &_rLifting_threshold_scad_cpp, 3},
     {"_rLifting_apply_filter_cpp", (DL_FUNC) &_rLifting_apply_filter_cpp, 5},
     {NULL, NULL, 0}
 };

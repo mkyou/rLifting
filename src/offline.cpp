@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// SureShrink: per-level lambdas computed independently via SURE.
+// (compute_sure_lambda_level is now inline in utils.h for reuse by
+// WaveletEngine.)
+std::vector<double> compute_thresholds_sure_internal(
+    const std::vector<std::vector<double>> &details, int max_level) {
+  std::vector<double> lambdas(max_level, 0.0);
+  for (int j = 0; j < max_level && j < (int)details.size(); j++) {
+    lambdas[j] = compute_sure_lambda_level(details[j]);
+  }
+  return lambdas;
+}
+
 // Helper to compute thresholds internally
 std::vector<double> compute_thresholds_internal(const std::vector<double> &d1,
                                                 int max_level, double alpha,
@@ -48,7 +60,8 @@ std::vector<double> compute_thresholds_internal(const std::vector<double> &d1,
 NumericVector denoise_offline_cpp(NumericVector signal, List steps,
                                   NumericVector norm, int levels, double alpha,
                                   double beta, std::string method,
-                                  int ext_mode, NumericVector t, int ll_k = 2) {
+                                  int ext_mode, NumericVector t, int ll_k = 2,
+                                  std::string threshold_method = "universal") {
   // Setup & Parsing
   std::vector<LiftingStep> cpp_steps;
   int n_steps = steps.size();
@@ -144,12 +157,22 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
   }
 
   // THRESHOLDING
-  std::vector<double> lambdas =
-      compute_thresholds_internal(details[0], levels, alpha, beta);
+  std::vector<double> lambdas;
+  if (threshold_method == "sure") {
+    lambdas = compute_thresholds_sure_internal(details, levels);
+  } else {
+    lambdas = compute_thresholds_internal(details[0], levels, alpha, beta);
+  }
+
+  // SCAD canonical shape parameter (Fan-Li 2001).
+  const double SCAD_A = 3.7;
 
   for (int j = 0; j < levels; j++) {
     double lam = lambdas[j];
     double lam_sq = lam * lam;
+    double two_lam = 2.0 * lam;
+    double a_lam = SCAD_A * lam;
+    double scad_denom = SCAD_A - 2.0;
     std::vector<double> &det = details[j];
 
     for (int i = 0; i < (int)det.size(); i++) {
@@ -164,6 +187,14 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
         } else if (method == "semisoft") {
           double s = std::sqrt(val * val - lam_sq);
           det[i] = (val > 0) ? s : -s;
+        } else if (method == "scad") {
+          double sgn = (val > 0) ? 1.0 : -1.0;
+          if (abs_val <= two_lam) {
+            det[i] = sgn * (abs_val - lam);
+          } else if (abs_val <= a_lam) {
+            det[i] = ((SCAD_A - 1.0) * val - sgn * a_lam) / scad_denom;
+          }
+          // else (|val| > a*lam): identity, det[i] unchanged
         }
       }
     }

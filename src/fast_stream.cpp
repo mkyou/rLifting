@@ -26,10 +26,11 @@ SEXP create_engine_cpp(List steps, NumericVector norm, int levels,
 // [[Rcpp::export]]
 double process_sample_cpp(SEXP engine_ptr, double new_sample, double t_val,
                           double alpha, double beta, std::string method,
-                          int update_freq, int step_iter) {
+                          int update_freq, int step_iter,
+                          std::string threshold_method = "universal") {
   Rcpp::XPtr<WaveletEngine> engine(engine_ptr);
   return engine->push_and_process(new_sample, t_val, alpha, beta, method,
-                                  update_freq, step_iter);
+                                  update_freq, step_iter, threshold_method);
 }
 
 // Batch Simulation (Causal / Turbo)
@@ -42,7 +43,8 @@ NumericVector run_causal_batch_cpp(NumericVector signal, List steps,
                                    int window_size, double alpha, double beta,
                                    std::string method, int ext_mode,
                                    int update_freq, NumericVector t,
-                                   int ll_k = 2) {
+                                   int ll_k = 2,
+                                   std::string threshold_method = "universal") {
   int n = signal.size();
   NumericVector output(n);
 
@@ -52,7 +54,7 @@ NumericVector run_causal_batch_cpp(NumericVector signal, List steps,
   for (int i = 0; i < n; i++) {
     double t_val = irreg ? t[i] : 0.0;
     output[i] = engine.push_and_process(signal[i], t_val, alpha, beta, method,
-                                        update_freq, i);
+                                        update_freq, i, threshold_method);
   }
   return output;
 }

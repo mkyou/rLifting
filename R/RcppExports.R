@@ -9,12 +9,12 @@ create_engine_cpp <- function(steps, norm, levels, window_size, ext_mode, irregu
     .Call(`_rLifting_create_engine_cpp`, steps, norm, levels, window_size, ext_mode, irregular, ll_k)
 }
 
-process_sample_cpp <- function(engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter) {
-    .Call(`_rLifting_process_sample_cpp`, engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter)
+process_sample_cpp <- function(engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter, threshold_method = "universal") {
+    .Call(`_rLifting_process_sample_cpp`, engine_ptr, new_sample, t_val, alpha, beta, method, update_freq, step_iter, threshold_method)
 }
 
-run_causal_batch_cpp <- function(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k = 2L) {
-    .Call(`_rLifting_run_causal_batch_cpp`, signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k)
+run_causal_batch_cpp <- function(signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k = 2L, threshold_method = "universal") {
+    .Call(`_rLifting_run_causal_batch_cpp`, signal, steps, norm, levels, window_size, alpha, beta, method, ext_mode, update_freq, t, ll_k, threshold_method)
 }
 
 ilwt_cpp <- function(coeffs_list, steps, norm, levels, ext_mode, original_len, t, ll_k = 2L) {
@@ -25,8 +25,8 @@ lwt_cpp <- function(signal, steps, norm, levels, ext_mode, t, ll_k = 2L) {
     .Call(`_rLifting_lwt_cpp`, signal, steps, norm, levels, ext_mode, t, ll_k)
 }
 
-denoise_offline_cpp <- function(signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k = 2L) {
-    .Call(`_rLifting_denoise_offline_cpp`, signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k)
+denoise_offline_cpp <- function(signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k = 2L, threshold_method = "universal") {
+    .Call(`_rLifting_denoise_offline_cpp`, signal, steps, norm, levels, alpha, beta, method, ext_mode, t, ll_k, threshold_method)
 }
 
 threshold_hard_cpp <- function(x, lambda) {
@@ -39,6 +39,10 @@ threshold_soft_cpp <- function(x, lambda) {
 
 threshold_semisoft_cpp <- function(x, lambda) {
     .Call(`_rLifting_threshold_semisoft_cpp`, x, lambda)
+}
+
+threshold_scad_cpp <- function(x, lambda, a) {
+    .Call(`_rLifting_threshold_scad_cpp`, x, lambda, a)
 }
 
 apply_filter_cpp <- function(x, coeffs, start_idx, ext_mode, ll_k) {

@@ -2,6 +2,8 @@
 #define RLIFTING_UTILS_H
 
 #include <Rcpp.h>
+#include <algorithm>
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -171,6 +173,50 @@ Rcpp::NumericVector compute_thresholds_cpp(
         Rcpp::NumericVector d1, int max_level,
         double alpha, double beta
 );
+
+// SURE-optimal threshold for a single decomposition level
+// (Donoho & Johnstone 1995). Returns the lambda minimising SURE for
+// soft thresholding, clamped to sigma * sqrt(2 log n). Sigma is
+// estimated per-level via MAD.
+inline double compute_sure_lambda_level(const std::vector<double> &d) {
+    int n = d.size();
+    if (n == 0) return 0.0;
+
+    std::vector<double> abs_d(n);
+    for (int i = 0; i < n; i++) abs_d[i] = std::abs(d[i]);
+
+    std::vector<double> abs_for_mad = abs_d;
+    int mid = n / 2;
+    std::nth_element(abs_for_mad.begin(), abs_for_mad.begin() + mid,
+                     abs_for_mad.end());
+    double sigma = abs_for_mad[mid] / 0.6745;
+    if (sigma < 1e-15) return 0.0;
+
+    std::sort(abs_d.begin(), abs_d.end());
+    double sigma_sq = sigma * sigma;
+    double universal_cap = sigma * std::sqrt(2.0 * std::log((double)n));
+
+    std::vector<double> cumsum_sq(n + 1, 0.0);
+    for (int i = 0; i < n; i++)
+        cumsum_sq[i + 1] = cumsum_sq[i] + abs_d[i] * abs_d[i];
+
+    double n_sigma_sq = (double)n * sigma_sq;
+    double best_sure = n_sigma_sq;
+    double best_lambda = 0.0;
+
+    for (int k = 0; k < n; k++) {
+        double lam = abs_d[k];
+        double sure = n_sigma_sq + cumsum_sq[k + 1] +
+                      lam * lam * (double)(n - k - 1) -
+                      2.0 * sigma_sq * (double)(k + 1);
+        if (sure < best_sure) {
+            best_sure = sure;
+            best_lambda = lam;
+        }
+    }
+    if (best_lambda > universal_cap) best_lambda = universal_cap;
+    return best_lambda;
+}
 
 Rcpp::NumericVector threshold_semisoft_cpp(
         Rcpp::NumericVector x,

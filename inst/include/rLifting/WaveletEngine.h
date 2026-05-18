@@ -96,7 +96,15 @@ public:
     return get_val_safe(x, i, n, ext_mode, ll_k);
   }
 
-  void update_thresholds(double alpha, double beta) {
+  void update_thresholds(double alpha, double beta,
+                         const std::string &threshold_method) {
+    if (threshold_method == "sure") {
+      for (int j = 0; j < levels; j++) {
+        current_lambdas[j] = compute_sure_lambda_level(work_detail[j]);
+      }
+      return;
+    }
+
     std::vector<double> &d1 = work_detail[0];
     int n1 = d1.size();
     if (n1 == 0) return;
@@ -128,7 +136,8 @@ public:
   // Core Processing Loop
   double push_and_process(double new_val, double t_val, double alpha,
                           double beta, std::string method, int update_freq,
-                          int step_iter) {
+                          int step_iter,
+                          const std::string &threshold_method = "universal") {
     ring_buffer[head] = new_val;
     if (irregular) ring_buffer_t[head] = t_val;
     head = (head + 1) % window_size;
@@ -221,11 +230,18 @@ public:
     }
 
     // Thresholding
-    if (step_iter % update_freq == 0) update_thresholds(alpha, beta);
+    if (step_iter % update_freq == 0)
+      update_thresholds(alpha, beta, threshold_method);
+
+    // SCAD canonical shape parameter (Fan-Li 2001).
+    const double SCAD_A = 3.7;
 
     for (int j = 0; j < levels; j++) {
       double lam    = current_lambdas[j];
       double lam_sq = lam * lam;
+      double two_lam = 2.0 * lam;
+      double a_lam = SCAD_A * lam;
+      double scad_denom = SCAD_A - 2.0;
       std::vector<double> &det = work_detail[j];
       int n_det = det.size();
 
@@ -240,6 +256,14 @@ public:
           } else if (method == "semisoft") {
             double s = std::sqrt(val * val - lam_sq);
             det[i] = (val > 0) ? s : -s;
+          } else if (method == "scad") {
+            double sgn = (val > 0) ? 1.0 : -1.0;
+            if (abs_val <= two_lam) {
+              det[i] = sgn * (abs_val - lam);
+            } else if (abs_val <= a_lam) {
+              det[i] = ((SCAD_A - 1.0) * val - sgn * a_lam) / scad_denom;
+            }
+            // else (|val| > a*lam): identity, det[i] unchanged
           }
         }
       }
