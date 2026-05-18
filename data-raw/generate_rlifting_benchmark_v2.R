@@ -28,12 +28,20 @@ BOUNDARIES = c("symmetric", "local_linear", "one_sided", "periodic", "zero")
 MODES = c("offline", "causal", "stream")
 
 # NEW method-axes only. v1 covered (universal, hard|soft|semisoft) with default
-# alpha/beta — those are intentionally NOT regenerated.
+# alpha/beta — those are intentionally NOT regenerated. Full discrete grid:
+#   - universal + scad (default alpha/beta)
+#   - universal + {hard, soft, semisoft, scad} with alpha/beta tuned via SURE
+#   - sure + {hard, soft, semisoft, scad}
 NEW_METHODS = list(
-  list(label = "universal_scad",   threshold = "universal", shrinkage = "scad",     tuned = FALSE),
-  list(label = "universal_tuned",  threshold = "universal", shrinkage = "semisoft", tuned = TRUE),
-  list(label = "sure_soft",        threshold = "sure",      shrinkage = "soft",     tuned = FALSE),
-  list(label = "sure_scad",        threshold = "sure",      shrinkage = "scad",     tuned = FALSE)
+  list(label = "universal_scad",          threshold = "universal", shrinkage = "scad",     tuned = FALSE),
+  list(label = "universal_tuned_hard",    threshold = "universal", shrinkage = "hard",     tuned = TRUE),
+  list(label = "universal_tuned_soft",    threshold = "universal", shrinkage = "soft",     tuned = TRUE),
+  list(label = "universal_tuned_semisoft",threshold = "universal", shrinkage = "semisoft", tuned = TRUE),
+  list(label = "universal_tuned_scad",    threshold = "universal", shrinkage = "scad",     tuned = TRUE),
+  list(label = "sure_hard",               threshold = "sure",      shrinkage = "hard",     tuned = FALSE),
+  list(label = "sure_soft",               threshold = "sure",      shrinkage = "soft",     tuned = FALSE),
+  list(label = "sure_semisoft",           threshold = "sure",      shrinkage = "semisoft", tuned = FALSE),
+  list(label = "sure_scad",               threshold = "sure",      shrinkage = "scad",     tuned = FALSE)
 )
 
 TMPDIR = "data/tmp_rlifting"
