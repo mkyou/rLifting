@@ -14,42 +14,22 @@
 
 #' Offline Benchmark Results
 #'
-#' Comparison of execution time and reconstruction error (MSE) between `rLifting` and other packages
-#' (wavethresh, wavelets) using Haar wavelet.
+#' Comparison of execution time and reconstruction MSE across packages, wavelets,
+#' boundary modes, and Donoho-Johnstone signals. Pre-computed by
+#' \code{data-raw/generate_vignette_data.R}.
 #'
-#' @format A data frame with the following columns:
+#' @format A data frame with 7 columns:
 #' \describe{
-#'   \item{Pkg}{Package name.}
-#'   \item{Time}{Execution time in seconds.}
-#'   \item{MSE}{Mean Squared Error.}
+#'   \item{Signal}{Test signal: \code{"doppler"}, \code{"heavisine"},
+#'     \code{"bumps"}, \code{"blocks"}.}
+#'   \item{Pkg}{Package: \code{"rLifting"}, \code{"wavethresh"},
+#'     \code{"adlift"}, \code{"nlt"}.}
+#'   \item{Wavelet}{Wavelet used (\code{NA} for non-rLifting packages).}
+#'   \item{Boundary}{Boundary extension mode (\code{NA} for non-rLifting
+#'     packages).}
+#'   \item{Sim}{Simulation index.}
+#'   \item{Time}{Execution time (seconds).}
+#'   \item{MSE}{Mean Squared Error against the noise-free signal.}
 #' }
 #' @usage data(benchmark_offline)
 "benchmark_offline"
-
-#' Causal Benchmark Results
-#'
-#' Comparison of execution time between `rLifting`'s optimized causal mode and 
-#' a naive sliding-window implementation using `wavethresh`.
-#'
-#' @format A list containing:
-#' \describe{
-#'   \item{rLifting_Time_Avg}{Average time (seconds) for rLifting.}
-#'   \item{Wavethresh_Naive_Time}{Time (seconds) for naive sliding window.}
-#'   \item{Speedup_Factor}{Ratio of Naive Time to rLifting Time.}
-#' }
-#' @usage data(benchmark_causal)
-"benchmark_causal"
-
-#' Leakage (Impulse Response) Results
-#'
-#' Measurement of energy leakage into the "past" when processing an impulse signal.
-#' Used to demonstrate the zero-lookahead property of the causal mode.
-#'
-#' @format A data frame with:
-#' \describe{
-#'   \item{Method}{Method description (e.g. "rLifting causal").}
-#'   \item{Leakage}{Sum of squared differences (leakage energy).}
-#' }
-#' @usage data(leakage_results)
-"leakage_results"
-
