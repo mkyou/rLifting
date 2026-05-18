@@ -24,7 +24,6 @@
   }
   if (type == "sine") return(sin(4 * pi * t))
 
-  # Advanced Benchmarks
   if (type == "doppler") {
     eps = 0.05
     return(sqrt(t * (1 - t)) * sin((2 * pi * 1.05) / (t + eps)))
@@ -36,16 +35,16 @@
 
   if (type == "blocks") {
     pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
-    h   = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
-    x   = numeric(n)
+    h = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
+    x = numeric(n)
     for (j in seq_along(pos)) x = x + h[j] * (1 + sign(t - pos[j])) / 2
     return(x)
   }
 
   if (type == "bumps") {
     pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
-    h   = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
-    w   = c(0.005, 0.005, 0.006, 0.01, 0.01, 0.03, 0.01, 0.01, 0.005,
+    h = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
+    w = c(0.005, 0.005, 0.006, 0.01, 0.01, 0.03, 0.01, 0.01, 0.005,
       0.008, 0.005)
 
     x = numeric(n)
@@ -75,7 +74,6 @@ validate_perfect_reconstruction = function(scheme, tol = 1e-9) {
   for (sig_type in signals) {
     x = .generate_signal(sig_type, n = 512)
 
-    # Use periodic to focus on math, not boundary
     res = lwt(x, scheme, extension = "periodic")
     rec = ilwt(res)
 
@@ -259,7 +257,6 @@ validate_shift_sensitivity = function(scheme) {
 visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   n = 2^levels
 
-  # 1. Wavelet Function (Psi)
   coeffs_psi = list()
   for (j in 1:levels) coeffs_psi[[paste0("d", j)]] = numeric(n / 2^j)
   coeffs_psi[[paste0("a", levels)]] = numeric(n / 2^levels)
@@ -272,7 +269,6 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
   )
   psi = ilwt(lwt_psi)
 
-  # 2. Scaling Function (Phi)
   coeffs_phi = list()
   for (j in 1:levels) coeffs_phi[[paste0("d", j)]] = numeric(n / 2^j)
   coeffs_phi[[paste0("a", levels)]] = numeric(n / 2^levels)
@@ -306,12 +302,11 @@ visualize_wavelet_basis = function(scheme, plot = TRUE, levels = 8) {
 #' @export
 print.wavelet_diagnosis = function(x, ...) {
   cat(sprintf("\n=== DIAGNOSIS: %s ===\n", toupper(attr(x, "wavelet"))))
-  
+
   for (res in x) {
     status = if (res$passed) "[PASS]" else "[FAIL]"
-    # Special handling for informational tests
     if (grepl("Sensitivity", res$name)) status = "[INFO]"
-    
+
     cat(sprintf("%-6s %-35s | %s\n", status, res$name, res$msg))
   }
   invisible(x)
@@ -324,10 +319,12 @@ print.wavelet_diagnosis = function(x, ...) {
 #' @param wavelet_name Name string or a \code{lifting_scheme} object.
 #' @param config Configuration list (is_ortho, vm_degrees, max_taps).
 #' @param verbose Print results to console handling? (Defaults to TRUE).
-#' @param plot Boolean. Visualize basis functions during diagnosis? (Defaults to TRUE).
+#' @param plot Boolean. Visualize basis functions during diagnosis?
+#'   (Defaults to TRUE).
 #'
-#' @return An object of class \code{wavelet_diagnosis} (S3), which is a list containing 
-#' the results of each test. The object has a dedicated \code{print} method.
+#' @return An object of class \code{wavelet_diagnosis} (S3), which is a list
+#' containing the results of each test. The object has a dedicated
+#' \code{print} method.
 #' @export
 diagnose_wavelet = function(wavelet_name, config, verbose = TRUE, plot = TRUE) {
 
@@ -355,7 +352,6 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE, plot = TRUE) {
 
   tests[[length(tests) + 1]] = validate_shift_sensitivity(sch)
 
-  # Attach attributes for the S3 class
   class(tests) = "wavelet_diagnosis"
   attr(tests, "wavelet") = wavelet_name
 
@@ -367,6 +363,6 @@ diagnose_wavelet = function(wavelet_name, config, verbose = TRUE, plot = TRUE) {
   if (verbose) {
     print(tests)
   }
-  
+
   invisible(tests)
 }

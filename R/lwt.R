@@ -7,7 +7,8 @@
 #' @param scheme A \code{lifting_scheme} object.
 #' @param levels Integer. Number of decomposition levels.
 #' @param extension Boundary extension mode: "symmetric" (default),
-#' "periodic", "zero", or "local_linear" (linear extrapolation from boundary samples).
+#' "periodic", "zero", or "local_linear" (linear extrapolation from
+#' boundary samples).
 #'
 #' @return An object of class 'lwt'. It is a list containing
 #' 'coeffs' (list of details d1..dn and approximation an) and
@@ -39,21 +40,27 @@ lwt = function(signal, scheme, levels = 1, extension = "symmetric", t = NULL,
   }
 
   ext_int = switch(extension,
-    "symmetric"    = 1L,
-    "periodic"     = 2L,
-    "zero"         = 3L,
+    "symmetric" = 1L,
+    "periodic" = 2L,
+    "zero" = 3L,
     "local_linear" = 4L,
-    "one_sided"    = 5L,
+    "one_sided" = 5L,
     1L)
 
   if (extension == "local_linear" && ll_k > n)
-    warning(sprintf("ll_k (%d) > signal length (%d): clamped to n.", ll_k, n))
+    warning(sprintf(
+      "ll_k (%d) > signal length (%d): clamped to n.", ll_k, n
+    ))
 
   if (!is.null(t)) {
     if (length(t) != n) stop("'t' must have the same length as 'signal'.")
     if (is.unsorted(t))  stop("'t' must be sorted in increasing order.")
     if (extension == "one_sided")
-      warning("extension 'one_sided' ignores irregular grid positions: Lagrange interpolation will not be applied. Use 'symmetric' or 'local_linear' for irregular-grid processing.")
+      warning(paste0(
+        "extension 'one_sided' ignores irregular grid positions: ",
+        "Lagrange interpolation will not be applied. ",
+        "Use 'symmetric' or 'local_linear' for irregular-grid processing."
+      ))
     .check_irregular_scheme(scheme)
   }
 
@@ -106,25 +113,22 @@ print.lwt = function(x, ...) {
 #' @return Invisibly returns \code{NULL}.
 #' @export
 plot.lwt = function(x, ...) {
-  # Setup layout: 1 row per level (+1 for approximation)
   oldpar = par(no.readonly = TRUE)
   on.exit(par(oldpar))
-  
+
   n_plots = x$levels + 1
   par(mfrow = c(n_plots, 1), mar = c(2, 4, 2, 1))
-  
-  # Plot Details (d1 to dn)
+
   for (i in 1:x$levels) {
     name = paste0("d", i)
     data = x$coeffs[[name]]
     ts.plot(data, main = paste("Detail Level", i), ylab = "Amp", col = "blue")
     grid()
   }
-  
-  # Plot Approximation (an)
+
   approx_name = paste0("a", x$levels)
-  ts.plot(x$coeffs[[approx_name]], main = paste("Approximation Level", x$levels), 
-          ylab = "Amp", col = "red")
+  ts.plot(x$coeffs[[approx_name]],
+    main = paste("Approximation Level", x$levels),
+    ylab = "Amp", col = "red")
   grid()
 }
-

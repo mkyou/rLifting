@@ -54,7 +54,7 @@ lifting_scheme = function(
   if (!has_support)
     warning(
       "Wavelet '", scheme$wavelet, "' has no interpolating predict steps. ",
-      "Using fixed coefficients for irregular grid — reconstruction is exact ",
+      "Using fixed coefficients for irregular grid -- reconstruction is exact ",
       "but approximation order may be suboptimal. ",
       "Use an interpolating wavelet (haar, cdf53, dd4) for best results.",
       call. = FALSE
@@ -72,7 +72,7 @@ lifting_scheme = function(
   if (name == "haar") {
     steps = list(
       list(type = "predict", coeffs = c(1), start_idx = 0),
-      list(type = "update",  coeffs = c(0.5), start_idx = 0)
+      list(type = "update", coeffs = c(0.5), start_idx = 0)
     )
     norm = c(sqrt(2), 1 / sqrt(2))
     return(list(steps = steps, norm = norm))
@@ -103,16 +103,16 @@ lifting_scheme = function(
 
   if (name == "cdf97" || name == "bior4.4") {
     alpha = -1.586134342
-    beta  = -0.05298011854
+    beta = -0.05298011854
     gamma = 0.8829110762
     delta = 0.4435068522
-    zeta  = 1.149604398
+    zeta = 1.149604398
 
     steps = list(
       list(type = "predict", coeffs = c(-alpha, -alpha), start_idx = 0),
-      list(type = "update",  coeffs = c(beta, beta), start_idx = -1),
+      list(type = "update", coeffs = c(beta, beta), start_idx = -1),
       list(type = "predict", coeffs = c(-gamma, -gamma), start_idx = 0),
-      list(type = "update",  coeffs = c(delta, delta), start_idx = -1)
+      list(type = "update", coeffs = c(delta, delta), start_idx = -1)
     )
     norm = c(zeta, 1 / zeta)
     return(list(steps = steps, norm = norm))
@@ -124,7 +124,7 @@ lifting_scheme = function(
 
     steps = list(
       list(type = "predict", coeffs = p_coeffs, start_idx = -1),
-      list(type = "update",  coeffs = u_coeffs, start_idx = -1)
+      list(type = "update", coeffs = u_coeffs, start_idx = -1)
     )
     norm = c(sqrt(2), 1 / sqrt(2))
     return(list(steps = steps, norm = norm))
@@ -154,7 +154,6 @@ print.lifting_scheme = function(x, ...) {
 plot.lifting_scheme = function(x, ...) {
   visualize_wavelet_basis(x, plot = TRUE, ...)
 }
-
 
 
 #' Create an individual Lifting Step

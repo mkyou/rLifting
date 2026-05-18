@@ -15,7 +15,7 @@
 #' sch = lifting_scheme("haar")
 #' fwd = lwt(s, sch)
 #' rec = ilwt(fwd)
-#' print(rec) # Should match s
+#' print(rec)
 ilwt = function(lwt_obj, scheme = NULL) {
 
   if (!inherits(lwt_obj, "lwt")) stop("Input must be an 'lwt' object.")
@@ -24,16 +24,16 @@ ilwt = function(lwt_obj, scheme = NULL) {
   ext_mode = if (!is.null(lwt_obj$extension)) lwt_obj$extension else "symmetric"
   ext_int = switch(
     ext_mode,
-    "symmetric"    = 1L,
-    "periodic"     = 2L,
-    "zero"         = 3L,
+    "symmetric" = 1L,
+    "periodic" = 2L,
+    "zero" = 3L,
     "local_linear" = 4L,
-    "one_sided"    = 5L,
+    "one_sided" = 5L,
     1L
   )
 
-  t_cpp  = if (!is.null(lwt_obj$t)) as.numeric(lwt_obj$t) else numeric(0)
-  ll_k   = if (!is.null(lwt_obj$ll_k)) as.integer(lwt_obj$ll_k) else 2L
+  t_cpp = if (!is.null(lwt_obj$t)) as.numeric(lwt_obj$t) else numeric(0)
+  ll_k = if (!is.null(lwt_obj$ll_k)) as.integer(lwt_obj$ll_k) else 2L
 
   res = ilwt_cpp(
     lwt_obj$coeffs,
