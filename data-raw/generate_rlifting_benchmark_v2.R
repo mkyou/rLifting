@@ -27,12 +27,17 @@ WAVELETS = c("haar", "db2", "cdf53", "cdf97", "dd4")
 BOUNDARIES = c("symmetric", "local_linear", "one_sided", "periodic", "zero")
 MODES = c("offline", "causal", "stream")
 
-# NEW method-axes only. v1 covered (universal, hard|soft|semisoft) with default
-# alpha/beta — those are intentionally NOT regenerated. Full discrete grid:
-#   - universal + scad (default alpha/beta)
+# Full discrete grid (12 method configs):
+#   - universal + {hard, soft, semisoft, scad} with default alpha/beta
 #   - universal + {hard, soft, semisoft, scad} with alpha/beta tuned via SURE
 #   - sure + {hard, soft, semisoft, scad}
+# The 3 universal-default configs with hard|soft|semisoft were originally
+# captured in v1 under different labels; they are re-included here under
+# canonical labels for a homogeneous environment.
 NEW_METHODS = list(
+  list(label = "universal_hard",          threshold = "universal", shrinkage = "hard",     tuned = FALSE),
+  list(label = "universal_soft",          threshold = "universal", shrinkage = "soft",     tuned = FALSE),
+  list(label = "universal_semisoft",      threshold = "universal", shrinkage = "semisoft", tuned = FALSE),
   list(label = "universal_scad",          threshold = "universal", shrinkage = "scad",     tuned = FALSE),
   list(label = "universal_tuned_hard",    threshold = "universal", shrinkage = "hard",     tuned = TRUE),
   list(label = "universal_tuned_soft",    threshold = "universal", shrinkage = "soft",     tuned = TRUE),
