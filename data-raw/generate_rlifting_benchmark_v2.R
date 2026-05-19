@@ -232,35 +232,25 @@ if (length(pending) > 0) {
   message(sprintf("Done in %.1f s  (%.1f min)", elapsed, elapsed / 60))
 }
 
-# Reassemble: combine v1 + v2 with backfilled metadata.
-message("Combining v1 + v2 results...")
-
-load("data/benchmark_rlifting.rda")  # benchmark_rlifting (v1, 900 rows)
-v1 = benchmark_rlifting
-if (!"Version" %in% names(v1)) v1$Version = "v1"
-if (!"ThresholdMethod" %in% names(v1)) v1$ThresholdMethod = "universal"
-if (!"Shrinkage" %in% names(v1)) v1$Shrinkage = v1$Method
-if (!"AlphaUsed" %in% names(v1)) v1$AlphaUsed = 0.3
-if (!"BetaUsed" %in% names(v1)) v1$BetaUsed = 1.2
+# Reassemble v2 checkpoints. Legacy v1 .rds files (named with bare shrinkage
+# labels hard|soft|semisoft) are filtered out as a defensive measure in case
+# they are still on disk from a previous run.
+message("Combining v2 results...")
 
 new_files = list.files(TMPDIR, pattern = "\\.rds$", full.names = TRUE)
 new_files = new_files[!basename(new_files) %in%
   paste0(apply(expand.grid(DJ_SIGNALS, WAVELETS, BOUNDARIES,
                            c("hard", "soft", "semisoft"), MODES),
                1, paste, collapse = "__"), ".rds")]
-v2 = if (length(new_files) > 0) {
+
+benchmark_rlifting = if (length(new_files) > 0) {
   do.call(rbind, lapply(new_files, readRDS))
 } else {
   data.frame()
 }
-
-shared = intersect(names(v1), names(v2))
-benchmark_rlifting = rbind(v1[, shared, drop = FALSE],
-                           v2[, shared, drop = FALSE])
 rownames(benchmark_rlifting) = NULL
-message(sprintf("Final: %d rows x %d cols (v1: %d, v2: %d)",
-                nrow(benchmark_rlifting), ncol(benchmark_rlifting),
-                nrow(v1), nrow(v2)))
+message(sprintf("Final: %d rows x %d cols",
+                nrow(benchmark_rlifting), ncol(benchmark_rlifting)))
 save(benchmark_rlifting, file = "data/benchmark_rlifting.rda",
      compress = "xz")
 message("Saved data/benchmark_rlifting.rda")
