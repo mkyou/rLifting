@@ -4,16 +4,21 @@ suppressPackageStartupMessages({
   library(adlift)
 })
 
+N_PTS = 1024L
+
 make_t_phys = function(signal_name) {
-  seeds = c(linear_phys = 101L, trend_events = 102L, blocks_gapped = 103L)
-  n = 256L
+  seeds = c(linear_phys = 101L, trend_events = 102L, blocks_gapped = 103L,
+            blocks_dj_irr = 201L, bumps_dj_irr = 202L,
+            doppler_dj_irr = 203L, heavisine_dj_irr = 204L)
   set.seed(seeds[[signal_name]])
   if (signal_name %in% c("linear_phys", "trend_events")) {
-    steps = abs(rnorm(n - 1L, mean = 1, sd = 0.9))
-  } else {
-    steps = abs(rnorm(n - 1L, mean = 0.5, sd = 0.3))
-    big = sample.int(n - 1L, 12L)
+    steps = abs(rnorm(N_PTS - 1L, mean = 1, sd = 0.9))
+  } else if (signal_name == "blocks_gapped") {
+    steps = abs(rnorm(N_PTS - 1L, mean = 0.5, sd = 0.3))
+    big = sample.int(N_PTS - 1L, 12L)
     steps[big] = runif(12L, min = 6, max = 18)
+  } else {
+    steps = abs(rnorm(N_PTS - 1L, mean = 1, sd = 0.4))
   }
   cumsum(c(0, steps))
 }
@@ -36,10 +41,36 @@ gen_pure = function(signal_name, t_phys) {
     for (j in seq_along(pos)) x = x + h[j] * (1 + sign(t_n - pos[j])) / 2
     return(x)
   }
+  if (signal_name == "doppler_dj_irr") {
+    eps = 0.05
+    return(sqrt(t_n * (1 - t_n)) * sin((2 * pi * 1.05) / (t_n + eps)))
+  }
+  if (signal_name == "heavisine_dj_irr") {
+    return(4 * sin(4 * pi * t_n) - sign(t_n - 0.3) - sign(0.72 - t_n))
+  }
+  if (signal_name == "blocks_dj_irr") {
+    pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
+    h = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
+    x = numeric(n)
+    for (j in seq_along(pos)) x = x + h[j] * (1 + sign(t_n - pos[j])) / 2
+    return(x)
+  }
+  if (signal_name == "bumps_dj_irr") {
+    pos = c(0.1, 0.13, 0.15, 0.23, 0.25, 0.40, 0.44, 0.65, 0.76, 0.78, 0.81)
+    h = c(4, -5, 3, -4, 5, -4.2, 2.1, 4.3, -3.1, 5.1, -4.2)
+    w = c(0.005, 0.005, 0.006, 0.01, 0.01, 0.03, 0.01, 0.01, 0.005, 0.008, 0.005)
+    x = numeric(n)
+    for (j in seq_along(pos)) {
+      x = x + h[j] * (1 + abs((t_n - pos[j]) / w[j])^4)^(-1)
+    }
+    return(x)
+  }
   stop("Unknown signal: ", signal_name)
 }
 
-NOISE_SD = c(linear_phys = 0.15, trend_events = 0.15, blocks_gapped = 0.50)
+NOISE_SD = c(linear_phys = 0.15, trend_events = 0.15, blocks_gapped = 0.50,
+             blocks_dj_irr = 0.30, bumps_dj_irr = 0.30,
+             doppler_dj_irr = 0.30, heavisine_dj_irr = 0.30)
 
 PRED_FNS = list(LinearPred = adlift::LinearPred, QuadPred = adlift::QuadPred,
                 CubicPred = adlift::CubicPred, AdaptPred = adlift::AdaptPred)
@@ -56,7 +87,9 @@ CONFIGS$label = with(CONFIGS, paste(
   tolower(sub("Pred", "", pred_name)), paste0("n", neighbours),
   ifelse(int, "int", "noint"), ifelse(clo, "clo", "noclo"), rule, sep = "_"))
 
-DJ_SIGNALS = c("linear_phys", "trend_events", "blocks_gapped")
+DJ_SIGNALS = c("linear_phys", "trend_events", "blocks_gapped",
+               "blocks_dj_irr", "bumps_dj_irr",
+               "doppler_dj_irr", "heavisine_dj_irr")
 N_SIM = 1000L
 
 col_stats = function(x, prefix) {
