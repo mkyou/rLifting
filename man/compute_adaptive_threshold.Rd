@@ -2,22 +2,38 @@
 % Please edit documentation in R/adaptative_threshold.R
 \name{compute_adaptive_threshold}
 \alias{compute_adaptive_threshold}
-\title{Calculate Adaptive Threshold (Recursive)}
+\title{Calculate Adaptive Threshold (Universal / Recursive)}
 \usage{
 compute_adaptive_threshold(lwt_obj, alpha = 0.3, beta = 1.2)
 }
 \arguments{
 \item{lwt_obj}{Object returned by \code{lwt()}.}
 
-\item{alpha}{Recursive adjustment parameter (Eq. 9).}
+\item{alpha}{Recursive adjustment parameter (Eq. 9 of Liu et al., 2014).}
 
-\item{beta}{Initial threshold scale factor (Eq. 9).}
+\item{beta}{Initial threshold scale factor (Eq. 9 of Liu et al., 2014).}
 }
 \value{
 Object of class \code{adaptive_thresholds} (a list of thresholds).
 }
 \description{
-Estimates the optimal noise threshold based on current window statistics.
-Implements the recursive formula from Liu et al. (2014).
-Accelerated with 'C++'.
+Estimates the per-level noise threshold from the finest-level detail
+coefficients and applies the recursive Liu et al. (2014) decay across
+levels. This is the step-by-step entry point for the universal threshold
+rule.
+}
+\details{
+To use SureShrink instead, call \code{denoise_signal_offline()} or the
+causal/stream functions with \code{threshold_method = "sure"} — the SURE
+branch lives in the C++ engine and is not exposed as a standalone R
+routine. For automatic selection of \code{alpha} and \code{beta},
+see \code{\link{tune_alpha_beta}}.
+}
+\references{
+Donoho, D. L., & Johnstone, I. M. (1994). Ideal spatial adaptation by
+wavelet shrinkage. \emph{Biometrika}, 81(3), 425--455.
+
+Liu, Z., Mi, Y., & Mao, Y. (2014). Improved real-time denoising method
+based on lifting wavelet transform. \emph{Measurement Science Review},
+14(3), 152--159. \doi{10.2478/msr-2014-0020}
 }

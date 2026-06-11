@@ -4,14 +4,18 @@
 \alias{threshold}
 \title{General Thresholding Wrapper}
 \usage{
-threshold(x, lambda, method = "soft")
+threshold(x, lambda, method = "soft", a = 3.7)
 }
 \arguments{
 \item{x}{Input vector.}
 
 \item{lambda}{Threshold value.}
 
-\item{method}{Method: "hard", "soft" or "semisoft".}
+\item{method}{One of \code{"hard"}, \code{"soft"}, \code{"semisoft"}, or
+\code{"scad"}.}
+
+\item{a}{SCAD shape parameter, ignored unless \code{method = "scad"}.
+Default 3.7 (Fan-Li canonical).}
 }
 \value{
 Numeric vector of the same length as \code{x} with thresholded coefficients.

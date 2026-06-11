@@ -1,6 +1,6 @@
 # rLifting — Adaptive Thresholding (Technical Reference)
 
-Technical specification of the threshold subsystem: estimators, formulas, code paths, edge cases. User-facing walkthrough with worked examples and decision tables lives in `vignette("02-thresholding-and-tuning")`. Architectural index: [`00-design-overview.md`](00-design-overview.md). Related notes: [`01-lifting-scheme-and-transform.md`](01-lifting-scheme-and-transform.md) (where the coefficients come from), [`03-zero-allocation-engine.md`](03-zero-allocation-engine.md) (the per-sample hot path), [`04-boundary-and-threshold.md`](04-boundary-and-threshold.md) (MAD-via-`nth_element` and shrinkage kernels).
+Technical specification of the threshold subsystem: estimators, formulas, code paths, edge cases. User-facing walkthrough with worked examples and decision tables lives in `vignette("v02-thresholding-and-tuning")`. Architectural index: [`00-design-overview.md`](00-design-overview.md). Related notes: [`01-lifting-scheme-and-transform.md`](01-lifting-scheme-and-transform.md) (where the coefficients come from), [`03-zero-allocation-engine.md`](03-zero-allocation-engine.md) (the per-sample hot path), [`04-boundary-and-threshold.md`](04-boundary-and-threshold.md) (MAD-via-`nth_element` and shrinkage kernels).
 
 Symbols used throughout:
 

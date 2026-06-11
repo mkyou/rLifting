@@ -10,9 +10,14 @@ new_wavelet_stream(
   levels = 1,
   alpha = 0.3,
   beta = 1.2,
-  method = "semisoft",
+  threshold_method = "universal",
+  shrinkage = NULL,
+  a = 3.7,
+  method = NULL,
   extension = "symmetric",
-  update_freq = 1
+  update_freq = 1,
+  irregular = FALSE,
+  ll_k = 4L
 )
 }
 \arguments{
@@ -22,19 +27,43 @@ new_wavelet_stream(
 
 \item{levels}{Decomposition levels (default 1).}
 
-\item{alpha}{Threshold decay parameter (Eq 9).}
+\item{alpha}{Threshold decay parameter (universal rule only). Ignored when
+\code{threshold_method = "sure"}.}
 
-\item{beta}{Threshold gain factor (Eq 9).}
+\item{beta}{Threshold gain factor (universal rule only). Ignored when
+\code{threshold_method = "sure"}.}
 
-\item{method}{Shrinkage method: "hard", "soft", "semisoft".}
+\item{threshold_method}{Threshold-selection rule. One of \code{"universal"}
+or \code{"sure"} (per-level SURE-minimising threshold, capped at the
+universal value; \code{alpha} and \code{beta} are unused).}
 
-\item{extension}{Boundary handling ('symmetric', 'periodic', 'zero').}
+\item{shrinkage}{Shrinkage rule: \code{"hard"}, \code{"soft"},
+\code{"semisoft"} (default), or \code{"scad"}.}
 
-\item{update_freq}{How often to recompute threshold statistics (default 1).}
+\item{a}{SCAD shape parameter (must be > 2; default 3.7 per Fan & Li 2001).
+Used only when \code{shrinkage = "scad"}.}
+
+\item{method}{Deprecated. Use \code{shrinkage} instead.}
+
+\item{extension}{Boundary handling: \code{"symmetric"}, \code{"periodic"},
+\code{"zero"}, \code{"local_linear"}, or \code{"one_sided"}.}
+
+\item{update_freq}{How often to recompute threshold statistics (default 1).
+Set to \code{0} to freeze thresholds at the warm-up estimate (a warning
+is emitted). Negative values are rejected.}
+
+\item{irregular}{Logical. If TRUE, the returned closure accepts a second
+argument \code{t_val} (the sample's time position) and applies
+position-aware interpolation in the predict steps.}
+
+\item{ll_k}{Local-linear neighbourhood size, used only when
+\code{extension = "local_linear"}. Default 4L; minimum 2; clamped to
+\code{window_size} if larger.}
 }
 \value{
-A closure function \code{processor(new_sample)} that accepts
-a single numeric value and returns the filtered value immediately.
+A closure \code{processor(new_sample, t_val = NULL)} that accepts
+one sample (and optionally its time position) and returns the filtered
+value.
 }
 \description{
 Generates a stateful function backed by a high-performance 'C++'

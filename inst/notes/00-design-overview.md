@@ -1,6 +1,6 @@
 # rLifting — Design Overview
 
-This document is the architectural index of the `inst/notes/` tree. It describes the design decisions of the `rLifting` package — broad architectural choices, central abstractions, and pointers — and links out to the subsystem and implementation references in the same directory. For user-facing tutorials and worked examples, see the vignette series (`vignette("01-introduction")`, `vignette("02-thresholding-and-tuning")`, `vignette("03-causal-stream")`, ...).
+This document is the architectural index of the `inst/notes/` tree. It describes the design decisions of the `rLifting` package — broad architectural choices, central abstractions, and pointers — and links out to the subsystem and implementation references in the same directory. For user-facing tutorials and worked examples, see the vignette series (`vignette("v01-introduction")`, `vignette("v02-thresholding-and-tuning")`, `vignette("v03-causal-stream")`, ...).
 
 ---
 
@@ -57,7 +57,7 @@ Built-in wavelets: `haar`, `db2`, `cdf53`, `cdf97`, `dd4`, `lazy`. Users may def
 
 The `degree` field governs irregular-grid behaviour and is inferred automatically in `lifting_scheme()` based on the sum of the predict step coefficients.
 
-→ *See: `vignette("05-irregular-grids")` for wavelet classification and degree inference on non-uniform sampling.*
+→ *See: `vignette("v05-irregular-grids")` for wavelet classification and degree inference on non-uniform sampling.*
 
 ---
 
@@ -83,7 +83,7 @@ Unlike the step-by-step pipeline of §4.1, `denoise_offline_cpp` carries its own
 
 The two surfaces converge at the C++ method `WaveletEngine::push_and_process(new_val, t_val, ...)`, which always takes a scalar `t_val` per sample. The R-side argument name reflects whether the caller is supplying a whole vector (`t`, batch) or a per-call scalar (`t_val`, stream).
 
-→ *See: `vignette("01-introduction")` for the user-facing tour and `vignette("03-causal-stream")` for the deep dive on the two sliding-window modes. The C++ data flow per mode lives in `03-zero-allocation-engine.md`.*
+→ *See: `vignette("v01-introduction")` for the user-facing tour and `vignette("v03-causal-stream")` for the deep dive on the two sliding-window modes. The C++ data flow per mode lives in `03-zero-allocation-engine.md`.*
 
 ---
 
@@ -101,7 +101,7 @@ Five extension modes, passed as an integer from R to C++:
 
 Adding or modifying a mode requires changes in **four C++ locations**: `utils.h` (`get_val_safe`), `utils.cpp` (`apply_filter_cpp`), `offline.cpp`, and `WaveletEngine.h`. Mode 5 is the only one that requires additional logic beyond `get_val_safe`, since it changes filter normalisation rather than just the value at a single out-of-bounds index.
 
-→ *See: `vignette("04-boundary-modes")` for the full per-mode discussion and causal-mode implications; `04-boundary-and-threshold.md` Part A documents the four mandatory C++ code paths.*
+→ *See: `vignette("v04-boundary-modes")` for the full per-mode discussion and causal-mode implications; `04-boundary-and-threshold.md` Part A documents the four mandatory C++ code paths.*
 
 ---
 
@@ -109,7 +109,7 @@ Adding or modifying a mode requires changes in **four C++ locations**: `utils.h`
 
 Signals with physically non-equispaced time positions are supported by passing a `t` vector to public functions. The predict step adapts its coefficients via Lagrange interpolation when the lifting scheme is interpolating (`degree >= 0`). Non-interpolating wavelets (`db2`, `cdf97`) ignore `t` and emit a warning.
 
-→ *See: `vignette("05-irregular-grids")` for the full user-facing discussion; `01-lifting-scheme-and-transform.md` §8 documents the Lagrange interpolation in the predict step (`interp_predict`) and `get_t_extrap` for boundary position extrapolation.*
+→ *See: `vignette("v05-irregular-grids")` for the full user-facing discussion; `01-lifting-scheme-and-transform.md` §8 documents the Lagrange interpolation in the predict step (`interp_predict`) and `get_t_extrap` for boundary position extrapolation.*
 
 ---
 
@@ -125,7 +125,7 @@ $$\lambda_k = \lambda_{k-1} \cdot \frac{k - 1}{k + \alpha - 1}$$
 
 Four shrinkage methods are available: `hard`, `soft`, `semisoft`, and `scad` (Antoniadis & Fan, 2001). Two threshold-selection rules drive how $\lambda$ is chosen: `universal` (VisuShrink with the recursive $\alpha/\beta$ decay shown above) and `sure` (per-level SureShrink). `tune_alpha_beta()` minimises SURE to pick $\alpha$ and $\beta$ automatically when the universal rule is used. In causal mode, the threshold is recomputed every `update_freq` samples from the finest-level details of the current window.
 
-→ *See: `02-adaptive-thresholding.md` for the MAD-with-$0.6745$ derivation, the α/β recursion and SURE-risk derivation, the four shrinkage formulas, the `tune_alpha_beta()` joint optimiser, and the offline-vs-causal threshold-update protocol. `vignette("02-thresholding-and-tuning")` covers the empirical reality check.*
+→ *See: `02-adaptive-thresholding.md` for the MAD-with-$0.6745$ derivation, the α/β recursion and SURE-risk derivation, the four shrinkage formulas, the `tune_alpha_beta()` joint optimiser, and the offline-vs-causal threshold-update protocol. `vignette("v02-thresholding-and-tuning")` covers the empirical reality check.*
 
 ---
 
@@ -140,4 +140,4 @@ The rest of the `inst/notes/` tree is ordered from least technical to most techn
 | `03-zero-allocation-engine.md` | `WaveletEngine` class layout and constructor allocations, ring buffer indexing and rationale, the per-sample hot path step-by-step (output index semantics, boundary modes in the hot path, irregular path), the XPtr finalizer pattern, allocation audit per public path, and how the offline path (`denoise_offline_cpp`) deliberately differs from the engine. |
 | `04-boundary-and-threshold.md` | **Part A:** formal definitions of the five boundary modes (half-sample symmetric vs whole-sample; periodic; zero; local-linear OLS with the $K^2(K^2-1)/12$ closed form; one-sided renormalised filter), the four mandatory C++ code paths, R-side dispatch sites, irregular position extrapolation via `get_t_extrap`. **Part B:** MAD via `nth_element` selection routed through the shared `compute_mad` helper (canonical averaged median across all four call sites), the three parallel shrinkage implementations across the codebase. |
 
-The user-facing tour lives in the vignette series (`vignette("01-introduction")` onward).
+The user-facing tour lives in the vignette series (`vignette("v01-introduction")` onward).

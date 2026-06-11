@@ -7,16 +7,16 @@
 \format{
 A data frame with 2048 rows and 3 columns:
 \describe{
-\item{index}{Time index.}
+\item{index}{Time index (1..2048).}
 \item{original}{The pure Doppler signal.}
-\item{noisy}{The signal with added Gaussian noise (sd=0.5).}
+\item{noisy}{The signal with added Gaussian noise (sd = 0.5).}
 }
 }
 \usage{
 data(doppler_example)
 }
 \description{
-A synthetic dataset containing a Doppler signal contaminated with Gaussian noise.
-Used in the "General Usage" vignette.
+Synthetic Doppler signal contaminated with Gaussian noise. Used in
+\code{vignette("v01-introduction")} and the boundary-mode comparison.
 }
 \keyword{datasets}

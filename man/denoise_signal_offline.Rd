@@ -10,8 +10,13 @@ denoise_signal_offline(
   alpha = 0.3,
   beta = 1.2,
   levels = 3,
-  method = "semisoft",
-  extension = "symmetric"
+  threshold_method = "universal",
+  shrinkage = NULL,
+  a = 3.7,
+  method = NULL,
+  extension = "symmetric",
+  t = NULL,
+  ll_k = 4L
 )
 }
 \arguments{
@@ -19,15 +24,42 @@ denoise_signal_offline(
 
 \item{scheme}{A \code{lifting_scheme} object.}
 
-\item{alpha}{Recursive threshold parameter.}
+\item{alpha}{Recursive threshold parameter (universal rule only). Ignored
+when \code{threshold_method = "sure"}.}
 
-\item{beta}{Threshold scale factor.}
+\item{beta}{Threshold scale factor (universal rule only). Ignored when
+\code{threshold_method = "sure"}.}
 
 \item{levels}{Number of decomposition levels.}
 
-\item{method}{Thresholding method ("hard", "soft", "semisoft").}
+\item{threshold_method}{Threshold-selection rule. One of \code{"universal"}
+(Donoho-Johnstone universal threshold with the recursive per-level decay
+parameterised by \code{alpha} and \code{beta}) or \code{"sure"}
+(SureShrink: per-level SURE-minimising threshold, capped at the universal
+value; \code{alpha} and \code{beta} are unused).}
 
-\item{extension}{Extension mode ("symmetric", "periodic", "zero").}
+\item{shrinkage}{Shrinkage rule applied above the threshold:
+\code{"hard"}, \code{"soft"}, \code{"semisoft"} (default), or
+\code{"scad"}.}
+
+\item{a}{SCAD shape parameter (must be > 2; default 3.7 per Fan & Li 2001).
+Used only when \code{shrinkage = "scad"}.}
+
+\item{method}{Deprecated. Use \code{shrinkage} instead. If provided, takes
+precedence over \code{shrinkage} with a deprecation warning.}
+
+\item{extension}{Extension mode: \code{"symmetric"}, \code{"periodic"},
+\code{"zero"}, \code{"local_linear"}, or \code{"one_sided"}.}
+
+\item{t}{Optional numeric vector of sample positions for irregular grids.
+Must be sorted and have the same length as \code{signal}. When supplied,
+irregular-grid Lagrange interpolation is applied in the predict steps
+(the scheme is validated by \code{.check_irregular_scheme}). Ignored by
+\code{extension = "one_sided"} (with a warning).}
+
+\item{ll_k}{Local-linear neighbourhood size, used only when
+\code{extension = "local_linear"}. Default 4L; minimum 2; clamped to the
+signal length if larger.}
 }
 \value{
 Filtered numeric vector (same length as input).

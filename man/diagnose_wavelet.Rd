@@ -13,11 +13,13 @@ diagnose_wavelet(wavelet_name, config, verbose = TRUE, plot = TRUE)
 
 \item{verbose}{Print results to console handling? (Defaults to TRUE).}
 
-\item{plot}{Boolean. Visualize basis functions during diagnosis? (Defaults to TRUE).}
+\item{plot}{Boolean. Visualize basis functions during diagnosis?
+(Defaults to TRUE).}
 }
 \value{
-An object of class \code{wavelet_diagnosis} (S3), which is a list containing
-the results of each test. The object has a dedicated \code{print} method.
+An object of class \code{wavelet_diagnosis} (S3), which is a list
+containing the results of each test. The object has a dedicated
+\code{print} method.
 }
 \description{
 Runs a battery of physical and mathematical tests on a wavelet.

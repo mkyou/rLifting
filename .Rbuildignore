@@ -21,3 +21,5 @@
 ^data-raw$
 ^\.github$
 ^vignettes/.*\.R$
+^data/tmp_
+^logs$

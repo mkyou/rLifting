@@ -20,3 +20,8 @@ Combines the stability of Soft Thresholding with the amplitude
 precision of Hard Thresholding.
 Function: \code{sign(x) * sqrt(x^2 - lambda^2)} for values above lambda.
 }
+\references{
+Liu, Z., Mi, Y., & Mao, Y. (2014). Improved real-time denoising method
+based on lifting wavelet transform. \emph{Measurement Science Review},
+14(3), 152--159. \doi{10.2478/msr-2014-0020}
+}

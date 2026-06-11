@@ -4,7 +4,7 @@
 \alias{lwt}
 \title{Lifting Wavelet Transform (Forward)}
 \usage{
-lwt(signal, scheme, levels = 1, extension = "symmetric")
+lwt(signal, scheme, levels = 1, extension = "symmetric", t = NULL, ll_k = 4L)
 }
 \arguments{
 \item{signal}{Numeric vector containing the input signal.}
@@ -13,13 +13,26 @@ lwt(signal, scheme, levels = 1, extension = "symmetric")
 
 \item{levels}{Integer. Number of decomposition levels.}
 
-\item{extension}{Boundary extension mode: "symmetric" (default),
-"periodic", or "zero".}
+\item{extension}{Boundary extension mode: \code{"symmetric"} (default),
+\code{"periodic"}, \code{"zero"}, \code{"local_linear"} (linear
+extrapolation from boundary samples), or \code{"one_sided"} (asymmetric
+filter renormalisation at the boundary).}
+
+\item{t}{Optional numeric vector of sample positions for irregular grids.
+Must be sorted and have the same length as \code{signal}. When supplied,
+irregular-grid Lagrange interpolation is applied in the predict steps
+and \code{lwt_obj$t} is stored for use by \code{ilwt()}. Ignored by
+\code{extension = "one_sided"} (with a warning).}
+
+\item{ll_k}{Local-linear neighbourhood size, used only when
+\code{extension = "local_linear"}. Default 4L; minimum 2; clamped to the
+signal length if larger.}
 }
 \value{
-An object of class 'lwt'. It is a list containing
-'coeffs' (list of details d1..dn and approximation an) and
-'scheme' (the scheme object used).
+An object of class \code{lwt}. It is a list containing
+\code{coeffs} (list of details d1..dn and approximation an),
+\code{scheme} (the scheme object used), \code{levels},
+\code{original_len}, \code{extension}, \code{ll_k}, and \code{t}.
 }
 \description{
 Performs the Forward Wavelet Transform using the Lifting Scheme.

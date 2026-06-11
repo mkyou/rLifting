@@ -7,7 +7,10 @@
 ilwt(lwt_obj, scheme = NULL)
 }
 \arguments{
-\item{lwt_obj}{Object of class 'lwt' returned by \code{lwt()}.}
+\item{lwt_obj}{Object of class \code{lwt} returned by \code{lwt()}.
+The fields \code{extension}, \code{ll_k}, and \code{t} carried by the
+object are reused to mirror the forward transform; the inverse cannot
+be invoked with a different boundary mode or grid.}
 
 \item{scheme}{(Optional) \code{lifting_scheme} object.
 If NULL, uses the one from \code{lwt_obj}.}
@@ -24,5 +27,5 @@ s = c(1, 2, 3, 4)
 sch = lifting_scheme("haar")
 fwd = lwt(s, sch)
 rec = ilwt(fwd)
-print(rec) # Should match s
+print(rec)
 }

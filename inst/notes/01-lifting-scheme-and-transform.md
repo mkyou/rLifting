@@ -1,6 +1,6 @@
 # Lifting Scheme and Transform — Technical Reference
 
-Companion to `vignette("01-introduction")`. The vignette gives the tour; this note covers the math, data structures, and code paths.
+Companion to `vignette("v01-introduction")`. The vignette gives the tour; this note covers the math, data structures, and code paths.
 
 Cross-references: `00-design-overview.md` (architectural index), `02-adaptive-thresholding.md` (threshold pipeline), `03-zero-allocation-engine.md` (engine/ring buffer), `04-boundary-and-threshold.md` (boundary modes, `get_val_safe`, MAD).
 
@@ -375,4 +375,4 @@ structure(
 - For the next stage of the pipeline (thresholding the `d_j`): `02-adaptive-thresholding.md`.
 - For why the engine inlines the loop and how the ring buffer keeps allocations zero: `03-zero-allocation-engine.md`.
 - For the full table of boundary modes and the four mandatory code paths: `04-boundary-and-threshold.md`.
-- User-facing usage: `vignette("01-introduction")`, `vignette("05-irregular-grids")`, `vignette("06-extensions")`.
+- User-facing usage: `vignette("v01-introduction")`, `vignette("v05-irregular-grids")`, `vignette("v06-extensions")`.

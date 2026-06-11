@@ -1,6 +1,6 @@
 # rLifting — Boundary Extension and Adaptive Thresholding (Implementation Reference)
 
-Implementation depth for the five boundary modes and the threshold internals. This note assumes the reader has gone through `vignette("04-boundary-modes")` for the user-facing semantics and empirical comparison; here we pin down the C++ surfaces, the four mandatory code paths, the OLS extrapolation, the renormalised one-sided filter, the `nth_element` median selection, and the piecewise shrinkage formulas.
+Implementation depth for the five boundary modes and the threshold internals. This note assumes the reader has gone through `vignette("v04-boundary-modes")` for the user-facing semantics and empirical comparison; here we pin down the C++ surfaces, the four mandatory code paths, the OLS extrapolation, the renormalised one-sided filter, the `nth_element` median selection, and the piecewise shrinkage formulas.
 
 Related notes: `00-design-overview.md` (architecture index), `01-lifting-scheme-and-transform.md` (lifting/polyphase math), `02-adaptive-thresholding.md` (α/β recursion, SURE rule, tuner), `03-zero-allocation-engine.md` (engine layout, ring buffer).
 
@@ -111,7 +111,7 @@ return (ws > 1e-15) ? vs / ws : 0.0;
 ```
 
 - **Fast path** (interior positions): identical to standard convolution, no overhead. Triggered when the entire filter window is in bounds.
-- **Boundary path**: accumulate value-sum $vs$ and weight-sum $ws$ over the in-bounds taps only, return $vs / ws$. The renormalisation preserves the original filter gain — e.g. for the CDF 5/3 predict $c = (0.5, 0.5)$ with one tap missing, the surviving coefficient becomes $1.0$, doubling the contribution of the boundary sample. This amplification is the source of the catastrophic MSE seen for `one_sided` + long filters in `vignette("04-boundary-modes")` §5.2.
+- **Boundary path**: accumulate value-sum $vs$ and weight-sum $ws$ over the in-bounds taps only, return $vs / ws$. The renormalisation preserves the original filter gain — e.g. for the CDF 5/3 predict $c = (0.5, 0.5)$ with one tap missing, the surviving coefficient becomes $1.0$, doubling the contribution of the boundary sample. This amplification is the source of the catastrophic MSE seen for `one_sided` + long filters in `vignette("v04-boundary-modes")` §5.2.
 - **Empty-window guard**: `ws > 1e-15` handles the case where every tap is out of bounds (signal shorter than the filter at extreme positions); returns 0. The threshold is a numerical safety margin rather than a mathematical condition — for any realistic filter at least one tap is in bounds.
 
 The four sites (Table A.2) each branch on `ext_mode == 5` *before* the `get_val_safe` loop and switch to `onesided_conv`. In `apply_filter_cpp` the branch is at function entry (in `apply_filter_cpp` in `utils.cpp`); in `offline.cpp` and `WaveletEngine.h` a local `bool use_os = (ext_mode == 5)` is set once per call and checked inside each predict/update step.
@@ -236,4 +236,4 @@ Between updates the cache holds the thresholds from the most recent recomputatio
 - **Lifting and polyphase math, including how the predict step calls into the boundary system**: `01-lifting-scheme-and-transform.md`.
 - **α/β recursion, universal vs. SURE rule, `tune_alpha_beta()` design**: `02-adaptive-thresholding.md`. This is where to look for *why* the threshold formula is what it is; this note covers the *implementation*.
 - **Ring buffer, pre-allocation, XPtr lifetime, per-sample data flow**: `03-zero-allocation-engine.md`.
-- **User-facing tour of the five modes, empirical MSE comparisons across signals and wavelets, decision guide**: `vignette("04-boundary-modes")`.
+- **User-facing tour of the five modes, empirical MSE comparisons across signals and wavelets, decision guide**: `vignette("v04-boundary-modes")`.

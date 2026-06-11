@@ -1,6 +1,6 @@
 # rLifting — Zero-Allocation Engine
 
-Implementation reference for the C++ computational core. Companion to `vignette("03-causal-stream")` (user-facing tour of the two sliding-window modes). This note documents the `WaveletEngine` class layout, the ring buffer mechanics, the XPtr finalizer pattern, the per-sample hot path, and the asymmetry between the offline path and the engine-based paths.
+Implementation reference for the C++ computational core. Companion to `vignette("v03-causal-stream")` (user-facing tour of the two sliding-window modes). This note documents the `WaveletEngine` class layout, the ring buffer mechanics, the XPtr finalizer pattern, the per-sample hot path, and the asymmetry between the offline path and the engine-based paths.
 
 Cross-references:
 - `01-lifting-scheme-and-transform.md` — `LiftingStep` struct, polyphase decomposition, predict/update math.
@@ -19,7 +19,7 @@ The phrase refers to the **per-sample hot path** (`process_sample_cpp` → `Wave
 What is *not* zero-allocation:
 - **Construction.** `WaveletEngine::WaveletEngine` allocates the ring buffer plus $2(L+1)$ workspace vectors (plus $2L+1$ position vectors if `irregular`). One-time cost.
 - **Offline path.** `denoise_offline_cpp` is a one-shot routine and intentionally allocates locally (see §6).
-- **R closure invocation.** `new_wavelet_stream`'s returned closure pays the R function-call overhead per sample (≈ 50–110% above `denoise_signal_causal`'s per-sample cost, measured in `vignette("03-causal-stream")` §5). The C++ side of the call is allocation-free.
+- **R closure invocation.** `new_wavelet_stream`'s returned closure pays the R function-call overhead per sample (≈ 50–110% above `denoise_signal_causal`'s per-sample cost, measured in `vignette("v03-causal-stream")` §5). The C++ side of the call is allocation-free.
 
 ---
 
@@ -200,7 +200,7 @@ One pointer reconstitution, one (non-virtual) method call. No `SEXP` allocation 
 Why the duplication:
 
 - **Access pattern.** Offline has the full signal of length $n$. The engine processes one sample at a time over a fixed-size window; running it sample-by-sample over an $n$-sample signal would require $n$ linearizations and a per-window MAD instead of a single global MAD, which is the wrong statistic for the non-causal case (see `02-adaptive-thresholding.md` §6.1).
-- **Allocation behaviour.** Offline allocates locally per level: `even`, `odd`, `details[j]`, optionally `t_even`/`t_odd`/`t_levels[j]`. These are `std::vector` on the C++ stack frame, freed on return. The cost is paid once per call and is negligible against the $O(n \log n)$ LWT work — pre-allocation would offer no measurable benefit for a one-shot routine. Benchmark evidence in `vignette("01-introduction")` and `02-adaptive-thresholding.md` shows the offline single-pass design is ≈ 4.4× faster than routing `lwt → threshold → ilwt` through R, attributable to eliminating intermediate SEXP boxing rather than to allocation strategy.
+- **Allocation behaviour.** Offline allocates locally per level: `even`, `odd`, `details[j]`, optionally `t_even`/`t_odd`/`t_levels[j]`. These are `std::vector` on the C++ stack frame, freed on return. The cost is paid once per call and is negligible against the $O(n \log n)$ LWT work — pre-allocation would offer no measurable benefit for a one-shot routine. Benchmark evidence in `vignette("v01-introduction")` and `02-adaptive-thresholding.md` shows the offline single-pass design is ≈ 4.4× faster than routing `lwt → threshold → ilwt` through R, attributable to eliminating intermediate SEXP boxing rather than to allocation strategy.
 - **Inverse reconstruction.** Offline produces a fully-reconstructed signal of length `original_len` (return block of `denoise_offline_cpp` in `offline.cpp`), not a single sample at the rightmost slot. The merging step (inverse-level loop in `denoise_offline_cpp`) allocates a new `merged` vector at each inverse level; this is structural, not a hot-path concern.
 
 The engine's design optimizes for repeated, stateful processing with a fixed memory footprint. The offline design optimizes for one-shot full-signal throughput. The two coexist; consolidating them would require sacrificing one set of constraints.
