@@ -1,6 +1,6 @@
 Package: rLifting
 Title: High-Performance Wavelet Lifting Transforms
-Version: 0.9.1
+Version: 1.0.0
 Date: 2026-06-11
 Authors@R: 
     person(given = "Moises", family = "da Silva", email = "moisesdff8@gmail.com", role = c("aut", "cre"))
