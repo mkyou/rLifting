@@ -1,11 +1,11 @@
 ---
-title: "08 — Real-world signal denoising: infant cardiac monitoring"
+title: "8. Real-world signal denoising: infant cardiac monitoring"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{08 — Real-world signal denoising: infant cardiac monitoring}
+  %\VignetteIndexEntry{8. Real-world signal denoising: infant cardiac monitoring}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
