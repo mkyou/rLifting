@@ -3,7 +3,7 @@ test_that("Offline Denoising returns correct dimensions", {
   sch = lifting_scheme("db2")
 
   for (met in c("hard", "soft", "semisoft")) {
-    res = denoise_signal_offline(x, sch, method = met)
+    res = denoise_signal_offline(x, sch, shrinkage = met)
     expect_equal(length(res), length(x))
     expect_false(any(is.na(res)))
   }

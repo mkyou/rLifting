@@ -35,8 +35,8 @@ test_that("tune_alpha_beta reduz SURE vs defaults em sinal com estrutura", {
   sch = lifting_scheme("haar")
 
   # SURE com defaults
-  sure_default = .sure_alpha_beta(noisy, sch, levels = 3,
-                                  alpha = 0.3, beta = 1.2)
+  sure_default = rLifting:::.sure_alpha_beta(noisy, sch, levels = 3,
+                                             alpha = 0.3, beta = 1.2)
   # SURE tunada
   tuned = tune_alpha_beta(noisy, sch, levels = 3)
 
@@ -63,11 +63,31 @@ test_that("tune_alpha_beta produz MSE menor ou comparável ao default em sinal r
   expect_lt(mse_tun, mse_def * 1.05)
 })
 
+test_that("tune_alpha_beta emite warning quando optim não converge", {
+  local_mocked_bindings(
+    optim = function(...) {
+      list(par = c(0.3, 1.2), value = 1.0, convergence = 1L)
+    },
+    .package = "stats"
+  )
+  set.seed(206)
+  x = rnorm(256)
+  sch = lifting_scheme("haar")
+  expect_warning(tune_alpha_beta(x, sch, levels = 2), "did not converge")
+})
+
+test_that("tune_alpha_beta não emite warning quando converge", {
+  set.seed(207)
+  x = rnorm(512)
+  sch = lifting_scheme("haar")
+  expect_no_warning(tune_alpha_beta(x, sch, levels = 3))
+})
+
 test_that(".sure_alpha_beta é determinístico", {
   set.seed(205)
   x = rnorm(256)
   sch = lifting_scheme("haar")
-  s1 = .sure_alpha_beta(x, sch, levels = 3, alpha = 0.5, beta = 1.0)
-  s2 = .sure_alpha_beta(x, sch, levels = 3, alpha = 0.5, beta = 1.0)
+  s1 = rLifting:::.sure_alpha_beta(x, sch, levels = 3, alpha = 0.5, beta = 1.0)
+  s2 = rLifting:::.sure_alpha_beta(x, sch, levels = 3, alpha = 0.5, beta = 1.0)
   expect_equal(s1, s2)
 })

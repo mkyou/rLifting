@@ -57,7 +57,7 @@ test_that("SureShrink produz output válido em sinal com estrutura", {
 test_that(".sure_optimal_lambda_level retorna lambda finito não-negativo", {
   set.seed(305)
   d = rnorm(128, sd = 0.5)
-  lam = .sure_optimal_lambda_level(d, sigma = 0.5)
+  lam = rLifting:::.sure_optimal_lambda_level(d, sigma = 0.5)
   expect_true(is.finite(lam))
   expect_gte(lam, 0)
 })
@@ -65,7 +65,7 @@ test_that(".sure_optimal_lambda_level retorna lambda finito não-negativo", {
 test_that(".sure_optimal_lambda_level: lambda <= max(|d|) sempre", {
   set.seed(306)
   d = rnorm(128, sd = 0.5)
-  lam = .sure_optimal_lambda_level(d, sigma = 0.5)
+  lam = rLifting:::.sure_optimal_lambda_level(d, sigma = 0.5)
   expect_lte(lam, max(abs(d)))
 })
 
@@ -73,7 +73,7 @@ test_that(".sure_optimal_lambda_level: minimiza SURE entre candidatos", {
   set.seed(307)
   d = c(rnorm(120, sd = 0.5), 3, -3.2, 4.1, 2.8)  # ruído + sinais grandes
   sigma = 0.5
-  lam_star = .sure_optimal_lambda_level(d, sigma = sigma)
+  lam_star = rLifting:::.sure_optimal_lambda_level(d, sigma = sigma)
 
   sure_fn = function(lambda) {
     sigma_sq = sigma * sigma
