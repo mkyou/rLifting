@@ -592,7 +592,7 @@ The recommendations below are split into two groups by evidence type. The §7.1 
 | You know the signal is smooth and oscillatory (Doppler-like) | `threshold_method = "universal"`, `shrinkage = "scad"`, default α/β | SCAD wins on `doppler` and `heavisine` across the cdf53/symmetric slice (Section 6 table); `tune_alpha_beta()` hurts these signals more often than it helps |
 | You know the signal is spatially inhomogeneous — sharp transitions (`blocks`) or localized smooth spikes (`bumps`) | `threshold_method = "universal"`, `shrinkage = "semisoft"`, run `tune_alpha_beta()` and keep the better of (defaults, tuned) | semisoft wins on `blocks` and `bumps` (Section 6 table); `tune_alpha_beta()` wins ~70% of cells on these signals with a median +10% improvement |
 | You have no priors about the signal | `threshold_method = "universal"`, `shrinkage = "semisoft"`, default α/β | semisoft is the only shrinkage that is never worst across the four signals; universal wins the threshold-rule comparison in 12 of 16 cells (Section 3 table) |
-| You are running in causal/stream mode | use `haar` (or `cdf97` only if the signal is known smooth-oscillatory) | the wavelet ranking shifts towards short filters under sliding-window processing; the empirical comparison lives in `vignette("01-introduction")`, Section 3, and `vignette("07-benchmarks")` |
+| You are running in causal/stream mode | use `haar` (or `cdf97` only if the signal is known smooth-oscillatory) | the wavelet ranking shifts towards short filters under sliding-window processing; the empirical comparison lives in `vignette("v01-introduction")`, Section 3, and `vignette("v07-benchmarks")` |
 
 ### 7.2 Recommendations from the wavelet-denoising literature
 
@@ -625,7 +625,7 @@ Two patterns differ from the regular-grid recommendations:
 - **Boundary mode matters more.** `local_linear` and `zero` together account for six of seven winners; `symmetric` (the regular-grid default) wins none. The Lagrange-corrected predict step amplifies whatever the boundary mode invents at the edges, so the choice is not cosmetic.
 - **`tune_alpha_beta()` is more frequently worth the cost.** Three of seven winners use the tuned threshold rule (`universal_tuned_*`), against a smaller fraction on the regular grid.
 
-The full per-signal/per-method comparison and the side-by-side ratios `MSEpos / MSEfix` (which quantify the value of supplying `t = t_phys` versus ignoring it) live in `vignette("05-irregular-grids")`.
+The full per-signal/per-method comparison and the side-by-side ratios `MSEpos / MSEfix` (which quantify the value of supplying `t = t_phys` versus ignoring it) live in `vignette("v05-irregular-grids")`.
 
 For the operational reference of the threshold subsystem (formulas, parameter ranges, engine update protocol), see `inst/notes/02-adaptive-thresholding.md`.
 

@@ -86,7 +86,7 @@ x_back  = ilwt(lwt_obj)
 
 For offline mode:
 
-```{r}
+```{r, eval = FALSE}
 denoise_signal_offline(
   x, lifting_scheme("cdf53"), t = t_phys,
   extension = "local_linear",
@@ -97,7 +97,7 @@ denoise_signal_offline(
 
 For causal and stream:
 
-```{r}
+```{r, eval = FALSE}
 tuned = tune_alpha_beta(x_slice, lifting_scheme("haar"), levels = 4)
 
 denoise_signal_causal(
@@ -117,14 +117,14 @@ These defaults were chosen to be (a) never far from the per-signal best across t
 
 ### Offline: cdf53 + local_linear + SURE + SCAD
 
-- `cdf53` is the *simplest* interpolating wavelet ($\mathrm{degree} = 1$, two-tap predict). Linear interpolation handles smooth regions exactly and degrades gracefully near transitions. Higher-order wavelets (`dd4`) match smooth signals better but pay a larger boundary contamination zone per level (`vignette("04-boundary-modes")` §1).
+- `cdf53` is the *simplest* interpolating wavelet ($\mathrm{degree} = 1$, two-tap predict). Linear interpolation handles smooth regions exactly and degrades gracefully near transitions. Higher-order wavelets (`dd4`) match smooth signals better but pay a larger boundary contamination zone per level (`vignette("v04-boundary-modes")` §1).
 - `extension = "local_linear"` fits an OLS line through the `ll_k` nearest boundary samples and evaluates it at the virtual extrapolation index. On smooth-trend signals this preserves the local linear behaviour into the virtual region. The default `symmetric` (half-sample reflection) instead pins the virtual value to the boundary sample, which on a trending signal injects a phantom *flattening* of the trend — small enough to survive thresholding, large enough to bias the approximation subband.
 - `threshold_method = "sure"` estimates a per-level $\hat\sigma_k$ and minimises the per-level Stein risk to pick the threshold. On signals with non-uniform spacing the detail-coefficient distribution at each level depends on the local spacing pattern, so the SURE per-level estimate beats the global MAD-plus-recursive-decay of the universal rule.
 - `shrinkage = "scad"` is identity for $|d| > a\lambda$ (Antoniadis & Fan, 2001), so large coefficients pass through unbiased — critical when the signal has isolated jumps. The continuous transition at $\lambda$ avoids the Gibbs-style ringing of hard.
 
 ### Causal / stream: haar + zero + tuned universal + SCAD
 
-- `haar` has a single-tap predict (`degree = 0`, nearest-neighbour), so the boundary contamination zone at every level is one sample — the smallest possible. Note that for `haar`, position-aware ≡ position-ignoring: its nearest-neighbour predict works correctly on irregular grids without position correction — the local difference `d[i] = x[2i+1] - x[2i]` is valid regardless of spacing, so the output is identical with or without `t`. In a sliding window of `window_size = 255`, the per-sample work is dominated by threshold update on the finest subband (`vignette("03-causal-stream")` §3). A short filter is the right call when the per-window estimate is already noisy.
+- `haar` has a single-tap predict (`degree = 0`, nearest-neighbour), so the boundary contamination zone at every level is one sample — the smallest possible. Note that for `haar`, position-aware ≡ position-ignoring: its nearest-neighbour predict works correctly on irregular grids without position correction — the local difference `d[i] = x[2i+1] - x[2i]` is valid regardless of spacing, so the output is identical with or without `t`. In a sliding window of `window_size = 255`, the per-sample work is dominated by threshold update on the finest subband (`vignette("v03-causal-stream")` §3). A short filter is the right call when the per-window estimate is already noisy.
 - `extension = "zero"` pads missing boundary taps with zero — a known, fixed value. Benchmark data confirms that for `haar` in causal mode, `zero` and `one_sided` produce similar MSE on all seven irregular-grid signals (the single-tap predict collapses the two modes). `zero` is preferred over `one_sided` here because it does not skip the Lagrange path: if the user later switches to an interpolating wavelet (`cdf53`, `dd4`), the `t` positions will be respected without any code change.
 - `tune_alpha_beta()` + `universal` + `scad`: in causal mode the per-window MAD already adapts $\hat\sigma$ to the local noise; the universal rule with tuned $(\alpha, \beta)$ closes the remaining gap. SURE in causal mode has too few finest-level coefficients per window ($m_1 = W/2 \approx 127$) to be reliable.
 
@@ -349,7 +349,7 @@ On this realisation the two strategies are close: Doppler is one of the DJ-irreg
 
 - For the implementation of Lagrange in the predict step and the per-level position tracking, see `inst/notes/01-lifting-scheme-and-transform.md` §8.
 - For boundary handling of values vs positions, see `inst/notes/04-boundary-and-threshold.md` §A.4.
-- For the cross-package benchmark comparing rLifting irregular against `adlift` and `nlt`, see `vignette("07-benchmarks")`; the raw data already ships in `data(benchmark_adlift_irregular)`, `data(benchmark_nlt_irregular)`, and `data(benchmark_rlifting_irregular)`.
+- For the cross-package benchmark comparing rLifting irregular against `adlift` and `nlt`, see `vignette("v07-benchmarks")`; the raw data already ships in `data(benchmark_adlift_irregular)`, `data(benchmark_nlt_irregular)`, and `data(benchmark_rlifting_irregular)`.
 
 ## References
 

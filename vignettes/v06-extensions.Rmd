@@ -16,9 +16,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette covers the extensibility of `rLifting` beyond the built-in wavelets and standard denoising pipelines: defining custom wavelets via predict and update steps, validating them with the `diagnose_wavelet` suite, and assembling low-level pipelines with custom logic between decomposition and reconstruction. Thresholding theory and the empirical decision guide live in `vignette("02-thresholding-and-tuning")`; this vignette uses the threshold primitives but does not re-derive them.
+This vignette covers the extensibility of `rLifting` beyond the built-in wavelets and standard denoising pipelines: defining custom wavelets via predict and update steps, validating them with the `diagnose_wavelet` suite, and assembling low-level pipelines with custom logic between decomposition and reconstruction. Thresholding theory and the empirical decision guide live in `vignette("v02-thresholding-and-tuning")`; this vignette uses the threshold primitives but does not re-derive them.
 
-For the deep dives that this vignette only summarises, see `vignette("02-thresholding-and-tuning")` (empirical thresholding decision guide), `vignette("03-causal-stream")` (causal-mode mechanics), `vignette("04-boundary-modes")` (per-mode empirical impact), and `vignette("05-irregular-grids")` (irregular-grid handling).
+For the deep dives that this vignette only summarises, see `vignette("v02-thresholding-and-tuning")` (empirical thresholding decision guide), `vignette("v03-causal-stream")` (causal-mode mechanics), `vignette("v04-boundary-modes")` (per-mode empirical impact), and `vignette("v05-irregular-grids")` (irregular-grid handling).
 
 ```{r setup}
 library(rLifting)
@@ -56,9 +56,9 @@ print(cdf97)
 
 The CDF 9/7 wavelet has four lifting steps (two predict, two update), making it significantly smoother than Haar but with wider filter support. The trade-off between smoothness and locality is fundamental in wavelet analysis.
 
-Irregular-grid support: `cdf53` and `dd4` have interpolating predict steps (`sum(coeffs) ≈ 1`) and activate Lagrange interpolation at the actual physical positions when `t` is supplied. `haar` works correctly on irregular grids without any position correction: its nearest-neighbour predict (`degree = 0`) captures the local difference `d[i] = x[2i+1] - x[2i]` regardless of spacing, so the result is identical with or without `t` (position-aware ≡ position-ignoring). `db2` and `cdf97` have non-interpolating predict steps and fall back to fixed coefficients on irregular grids (with a warning). See `vignette("05-irregular-grids")` for details.
+Irregular-grid support: `cdf53` and `dd4` have interpolating predict steps (`sum(coeffs) ≈ 1`) and activate Lagrange interpolation at the actual physical positions when `t` is supplied. `haar` works correctly on irregular grids without any position correction: its nearest-neighbour predict (`degree = 0`) captures the local difference `d[i] = x[2i+1] - x[2i]` regardless of spacing, so the result is identical with or without `t` (position-aware ≡ position-ignoring). `db2` and `cdf97` have non-interpolating predict steps and fall back to fixed coefficients on irregular grids (with a warning). See `vignette("v05-irregular-grids")` for details.
 
-For empirical guidance on which wavelet to choose given a signal and operation mode, see `vignette("01-introduction")` Section 3 (regular-grid bench) and `vignette("07-benchmarks")` (full picture).
+For empirical guidance on which wavelet to choose given a signal and operation mode, see `vignette("v01-introduction")` Section 3 (regular-grid bench) and `vignette("v07-benchmarks")` (full picture).
 
 ## 2. Defining custom wavelets
 
@@ -177,7 +177,7 @@ For fine-grained control over the denoising flow, the four primitives at the hea
 - `threshold(x, lambda, method, a)` — applies one of the four shrinkage rules (`"hard"`, `"soft"`, `"semisoft"`, `"scad"`) to a vector of coefficients.
 - `ilwt(lwt_obj)` — inverse transform that reuses the `extension`, `ll_k`, and `t` carried by the `lwt` object.
 
-The math behind these primitives lives in `vignette("02-thresholding-and-tuning")`: §3 covers the universal vs SURE threshold rules, §4 the α/β recursion, §5 the `tune_alpha_beta()` tuner, §6 the four shrinkage functions with bench-grounded recommendations. This vignette focuses on *composing* the primitives in non-standard ways.
+The math behind these primitives lives in `vignette("v02-thresholding-and-tuning")`: §3 covers the universal vs SURE threshold rules, §4 the α/β recursion, §5 the `tune_alpha_beta()` tuner, §6 the four shrinkage functions with bench-grounded recommendations. This vignette focuses on *composing* the primitives in non-standard ways.
 
 The example below decomposes a noisy two-frequency signal at five levels, applies a different shrinkage rule per level (semisoft on the finest details, hard on a middle level, no threshold on the coarsest), and reconstructs:
 
@@ -244,7 +244,7 @@ Every transform function accepts an `extension` parameter controlling how the si
 | `"local_linear"` | OLS line through `ll_k` boundary samples (default 4)   | Trending signals; drifting baselines       |
 | `"one_sided"`    | Drops out-of-bounds taps; renormalises filter by sum   | Causal mode with `haar`; no assumption beyond edge |
 
-For the empirical impact in offline mode (boundary choice changes MSE by at most a few percent) and the wavelet-conditional picture in causal/stream (`one_sided` and `zero` dominate with `haar`; `symmetric` is the safe default with longer filters), see `vignette("04-boundary-modes")`. The two short subsections below illustrate the two non-default modes that have user-facing parameters or constraints.
+For the empirical impact in offline mode (boundary choice changes MSE by at most a few percent) and the wavelet-conditional picture in causal/stream (`one_sided` and `zero` dominate with `haar`; `symmetric` is the safe default with longer filters), see `vignette("v04-boundary-modes")`. The two short subsections below illustrate the two non-default modes that have user-facing parameters or constraints.
 
 ### local_linear: k-point extrapolation
 
@@ -329,7 +329,7 @@ ggplot(df_bnd, aes(x = t, y = value, colour = Signal, linewidth = Signal)) +
 
 ### Causal stream: symmetric vs one_sided
 
-In causal and stream modes, both edges of the sliding window are virtual, and the boundary choice affects every filtered output rather than just the edge samples. For the recommended causal default (`haar`), `one_sided` makes no assumption about samples beyond the window and consistently outperforms `symmetric` on the regular-grid benchmark; the full per-wavelet comparison lives in `vignette("04-boundary-modes")` Section 5.
+In causal and stream modes, both edges of the sliding window are virtual, and the boundary choice affects every filtered output rather than just the edge samples. For the recommended causal default (`haar`), `one_sided` makes no assumption about samples beyond the window and consistently outperforms `symmetric` on the regular-grid benchmark; the full per-wavelet comparison lives in `vignette("v04-boundary-modes")` Section 5.
 
 ```{r boundary_causal, fig.cap="Figure 3: Causal-stream denoising of a trending signal with sinusoidal component (Haar, window = 63). symmetric (blue) reflects the most recent sample inward at each step; one_sided (pink) renormalises the filter against the available window. Both follow the trend; the differences emerge in regions where the filter window contains a transition."}
 set.seed(1)
@@ -380,7 +380,7 @@ ggplot(df_c, aes(x = t, y = value, colour = Signal, linewidth = Signal)) +
   theme_minimal()
 ```
 
-For the full mechanics of causal and stream modes (warm-up, `window_size`, `update_freq`, latency), see `vignette("03-causal-stream")`.
+For the full mechanics of causal and stream modes (warm-up, `window_size`, `update_freq`, latency), see `vignette("v03-causal-stream")`.
 
 ## 6. Irregular grids and custom wavelets
 
@@ -468,7 +468,7 @@ The Lagrange path is activated automatically because the predict step's `degree`
 
 Non-interpolating predict steps (`sum ≠ 1`) fall back to fixed coefficients when `t` is supplied. This is the correct behaviour for orthogonal wavelets like `db2`, whose predict steps are designed for regular spacing; the package issues a warning so the user knows the irregular path was not activated.
 
-The full discussion of irregular-grid mechanics, wavelet eligibility, and per-mode behaviour lives in `vignette("05-irregular-grids")`, with empirical recommendations grounded in `data(benchmark_rlifting_irregular)`.
+The full discussion of irregular-grid mechanics, wavelet eligibility, and per-mode behaviour lives in `vignette("v05-irregular-grids")`, with empirical recommendations grounded in `data(benchmark_rlifting_irregular)`.
 
 ## 7. Visualizing wavelet basis functions
 
@@ -487,8 +487,8 @@ plot(lifting_scheme("cdf97"))
 - Six built-in wavelets cover common use cases. `cdf53` and `dd4` adapt to irregular grids; `cdf97` is the smoothest; `haar` is the fastest and the recommended default for causal/stream mode.
 - Custom wavelets via `lift_step()` plus `custom_wavelet()` work in every function; `degree` is inferred automatically for irregular-grid support.
 - Diagnostic suite validates perfect reconstruction, vanishing moments, orthogonality, compact support, and shift sensitivity, both via the wrapper `diagnose_wavelet()` and via the five standalone `validate_*` functions.
-- Low-level API (`lwt`, `ilwt`, `compute_adaptive_threshold`, `threshold`) for fully custom pipelines that interleave bespoke logic between decomposition and reconstruction. Threshold mathematics and the empirical decision guide live in `vignette("02-thresholding-and-tuning")`.
-- Five boundary modes with mode-specific trade-offs and wavelet-conditional empirical impact (`vignette("04-boundary-modes")`); `one_sided` is especially suited for causal/stream mode with short filters (`haar`) at regular grids; `local_linear`'s `ll_k` is the only numeric tunable.
+- Low-level API (`lwt`, `ilwt`, `compute_adaptive_threshold`, `threshold`) for fully custom pipelines that interleave bespoke logic between decomposition and reconstruction. Threshold mathematics and the empirical decision guide live in `vignette("v02-thresholding-and-tuning")`.
+- Five boundary modes with mode-specific trade-offs and wavelet-conditional empirical impact (`vignette("v04-boundary-modes")`); `one_sided` is especially suited for causal/stream mode with short filters (`haar`) at regular grids; `local_linear`'s `ll_k` is the only numeric tunable.
 - Irregular-grid support via the `t` vector activates Lagrange interpolation for `cdf53` (linear) and `dd4` (cubic). `haar` works correctly on irregular grids without position correction — its nearest-neighbour predict is spacing-agnostic by design, so the output is identical with or without `t`. `db2` and `cdf97` fall back to fixed coefficients with a warning.
 
 ## References

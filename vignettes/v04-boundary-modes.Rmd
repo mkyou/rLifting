@@ -166,7 +166,7 @@ The practical takeaway is that for offline denoising the choice barely matters. 
 
 ## 5. Empirical impact in causal and stream mode
 
-In causal and stream modes every output sample requires a fresh decision about the right boundary of the sliding window — and the right boundary never has real data, because the future does not exist. The boundary choice now affects every filtered output, not just the first and last few samples. The picture is also more sensitive to the wavelet choice than in offline mode, so we split the analysis: first the recommended causal-mode default (`haar`, per `vignette("01-introduction")` §3), then a note on what changes for longer-filter wavelets.
+In causal and stream modes every output sample requires a fresh decision about the right boundary of the sliding window — and the right boundary never has real data, because the future does not exist. The boundary choice now affects every filtered output, not just the first and last few samples. The picture is also more sensitive to the wavelet choice than in offline mode, so we split the analysis: first the recommended causal-mode default (`haar`, per `vignette("v01-introduction")` §3), then a note on what changes for longer-filter wavelets.
 
 ### 5.1 With `haar` (the causal-mode default)
 
@@ -267,7 +267,7 @@ Stream mode follows the same pattern as causal — the underlying `WaveletEngine
 1. Incompatibility with irregular grids. When the user passes `t` and selects `one_sided`, the C++ engine takes the `one_sided` branch and calls `onesided_conv` directly, skipping the Lagrange interpolation that the irregular path would otherwise apply. The package raises a warning at the R level when `one_sided` is combined with `t` or `irregular = TRUE`. Use `symmetric` or `local_linear` if you need both irregular grids and edge-aware boundaries.
 2. Slight computational overhead at the boundary. The fast path inside `onesided_conv` is the same as a regular convolution for any window position whose filter taps are all in-bounds — only the boundary positions pay a small renormalisation cost. On a long signal the per-call overhead is negligible.
 
-`one_sided` does not break causality. By construction it uses only samples that exist inside the window, so the leakage-free guarantee of `denoise_signal_causal` and `new_wavelet_stream` is preserved — the same counterfactual leakage check shown in `vignette("03-causal-stream")` §7 passes for `one_sided` exactly as it does for `symmetric`.
+`one_sided` does not break causality. By construction it uses only samples that exist inside the window, so the leakage-free guarantee of `denoise_signal_causal` and `new_wavelet_stream` is preserved — the same counterfactual leakage check shown in `vignette("v03-causal-stream")` §7 passes for `one_sided` exactly as it does for `symmetric`.
 
 ## 7. Decision guide
 
@@ -289,9 +289,9 @@ The causal/stream rows are conditional on the wavelet — the `one_sided` and `z
 | Finite-duration pulse known to be zero outside the observation window | `zero` | Reflects the physical model exactly |
 | Signal with a strong linear trend at the boundary | `local_linear` (offline only) | Captures the trend; `ll_k = 4` is a robust default. Bench does not sweep `ll_k`. |
 
-For the broader empirical picture across modes, wavelets, and the full thresholding grid, see `vignette("07-benchmarks")`. The C++ implementation rationale for the four mandatory code paths — and why `one_sided` is the only one that needs special handling — is in `inst/notes/04-boundary-and-threshold.md` Part A.
+For the broader empirical picture across modes, wavelets, and the full thresholding grid, see `vignette("v07-benchmarks")`. The C++ implementation rationale for the four mandatory code paths — and why `one_sided` is the only one that needs special handling — is in `inst/notes/04-boundary-and-threshold.md` Part A.
 
-Irregular grids. The recommendations above apply to uniform sampling. On non-uniform grids the picture changes: `local_linear` becomes the offline default (it preserves the local trend that the Lagrange-corrected predict step expects), and `symmetric`'s offline advantage disappears on trending signals because it injects a phantom flattening at the boundary. For causal and stream mode, `one_sided` skips the Lagrange path (§6 above) and should be replaced by `zero` when using haar (the dominant causal wavelet). The full irregular-grid boundary recommendations are in `vignette("05-irregular-grids")` §5–§6.
+Irregular grids. The recommendations above apply to uniform sampling. On non-uniform grids the picture changes: `local_linear` becomes the offline default (it preserves the local trend that the Lagrange-corrected predict step expects), and `symmetric`'s offline advantage disappears on trending signals because it injects a phantom flattening at the boundary. For causal and stream mode, `one_sided` skips the Lagrange path (§6 above) and should be replaced by `zero` when using haar (the dominant causal wavelet). The full irregular-grid boundary recommendations are in `vignette("v05-irregular-grids")` §5–§6.
 
 ## References
 

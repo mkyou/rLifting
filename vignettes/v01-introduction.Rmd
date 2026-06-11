@@ -75,7 +75,7 @@ lifting_scheme("db2") # Orthogonal; 2 vanishing moments
 lifting_scheme("lazy") # Identity split only; for diagnostic use
 ```
 
-**Practical guidance for offline mode — regular grids** (based on the offline slice of `data/benchmark_rlifting.rda`, over four Donoho–Johnstone signals at $N = 1024$, 12 thresholding configurations and 5 boundary modes each, with 1000 Monte Carlo replications per cell; irregular-grid recommendations differ — see Section 7 and `vignette("05-irregular-grids")`):
+**Practical guidance for offline mode — regular grids** (based on the offline slice of `data/benchmark_rlifting.rda`, over four Donoho–Johnstone signals at $N = 1024$, 12 thresholding configurations and 5 boundary modes each, with 1000 Monte Carlo replications per cell; irregular-grid recommendations differ — see Section 7 and `vignette("v05-irregular-grids")`):
 
 - **`cdf53`**: reliable generalist. Never wins outright on the benchmark, but never far from the winner, and fast.
 - **`haar`**: best for signals with sharp discontinuities (lowest MSE on `blocks` by roughly 2×), and the fastest option overall.
@@ -83,9 +83,9 @@ lifting_scheme("lazy") # Identity split only; for diagnostic use
 - **`db2`**: wins on `heavisine`, and a strong alternative when orthogonality matters (energy conservation).
 - **`dd4`**: consistently underperforms on the regular DJ benchmark even with `tune_alpha_beta()` and is not recommended as a default. Available for research on irregular grids and high-vanishing-moment applications.
 
-**The ranking shifts in causal and stream modes.** With a sliding window of $W = 255$ samples, longer filters spend a larger fraction of their work in the boundary zone and the per-window $\hat{\sigma}$ has more variance than the global offline estimate. The benchmark's causal/stream slices show `haar` winning not only on `blocks` but also on `bumps` and `heavisine`; `cdf97` retains its edge only on `doppler`; `db2` falls from second/third to fourth place. Use `haar` as the default for causal/stream applications unless the signal is known to be smooth and oscillatory, in which case `cdf97` is still the right choice. The full mode-by-mode comparison lives in `vignette("07-benchmarks")`; the causal-specific tuning guidance (window size, update frequency, latency trade-offs) is in `vignette("03-causal-stream")`.
+**The ranking shifts in causal and stream modes.** With a sliding window of $W = 255$ samples, longer filters spend a larger fraction of their work in the boundary zone and the per-window $\hat{\sigma}$ has more variance than the global offline estimate. The benchmark's causal/stream slices show `haar` winning not only on `blocks` but also on `bumps` and `heavisine`; `cdf97` retains its edge only on `doppler`; `db2` falls from second/third to fourth place. Use `haar` as the default for causal/stream applications unless the signal is known to be smooth and oscillatory, in which case `cdf97` is still the right choice. The full mode-by-mode comparison lives in `vignette("v07-benchmarks")`; the causal-specific tuning guidance (window size, update frequency, latency trade-offs) is in `vignette("v03-causal-stream")`.
 
-For signals on non-uniform grids, the empirical picture in `data(benchmark_rlifting_irregular)` is bimodal. On signals whose irregular sampling actively carries information — the four DJ classics resampled at non-uniform positions and `blocks_gapped` — interpolating wavelets (`cdf53`, `dd4`) deliver modest MSE gains over their position-ignoring counterparts (median ratio `MSEpos/MSEfix` in the 0.90–1.05 range). On smooth signals where the irregular structure is incidental (`linear_phys`, `trend_events`), `cdf53` is still the lowest-MSE wavelet *when paired with `boundary = "zero"`*, but its **median** performance across boundaries collapses (ratios 17×–37× worse than position-ignoring), because Lagrange-corrected predict steps amplify high-frequency noise that the uniform-grid approximation would have ignored. Practical implication: on irregular grids, the boundary choice carries more weight than on regular grids — see `vignette("05-irregular-grids")` for the full per-signal table.
+For signals on non-uniform grids, the empirical picture in `data(benchmark_rlifting_irregular)` is bimodal. On signals whose irregular sampling actively carries information — the four DJ classics resampled at non-uniform positions and `blocks_gapped` — interpolating wavelets (`cdf53`, `dd4`) deliver modest MSE gains over their position-ignoring counterparts (median ratio `MSEpos/MSEfix` in the 0.90–1.05 range). On smooth signals where the irregular structure is incidental (`linear_phys`, `trend_events`), `cdf53` is still the lowest-MSE wavelet *when paired with `boundary = "zero"`*, but its **median** performance across boundaries collapses (ratios 17×–37× worse than position-ignoring), because Lagrange-corrected predict steps amplify high-frequency noise that the uniform-grid approximation would have ignored. Practical implication: on irregular grids, the boundary choice carries more weight than on regular grids — see `vignette("v05-irregular-grids")` for the full per-signal table.
 
 The number of decomposition `levels` sets how many octave bands are isolated. The hard upper bound is `floor(log2(n))` (signal or window length), but the MAD noise estimator needs enough coefficients at the finest level and the inverse transform stays well-behaved only while the coarsest residual still holds a reasonable number of samples. A practical heuristic is to keep the coarsest residual at 16–32 samples, i.e. `levels ≤ floor(log2(n / 16))`. Choose more levels for signals with strong low-frequency content (smooth oscillations, slow trends) and fewer for rapidly-varying or short signals.
 
@@ -117,7 +117,7 @@ offline_clean = denoise_signal_offline(
 - `threshold_method`: `"universal"` (default; VisuShrink finest-level threshold of Donoho & Johnstone, 1994, propagated to coarser levels via the α/β recursion of Liu, Mi, & Mao, 2014, below) or `"sure"` (SureShrink: per-level SURE-minimising threshold, in which case `alpha` and `beta` are inert). Use `tune_alpha_beta()` to pick α and β automatically by minimising SURE.
 - `alpha`: controls how the threshold decays from fine to coarse levels via the recursion $\lambda_k = \lambda_{k-1} \cdot (k-1)/(k+\alpha-1)$ (Liu, Mi, & Mao, 2014). Smaller values (e.g. 0.1) keep the threshold nearly flat across levels; larger values (e.g. 5) decay aggressively, suppressing coarse-level coefficients. At $\alpha = 0$ the threshold is constant across all levels.
 - `beta`: scales the universal threshold $\lambda_1 = \beta \cdot \hat{\sigma} \cdot \sqrt{2 \log n}$ (Donoho & Johnstone, 1994). Values above 1.0 increase smoothing; below 1.0 reduce it.
-- `extension`: five boundary modes are available: `"symmetric"` (default), `"periodic"`, `"zero"`, `"local_linear"` (linear extrapolation; neighbourhood size controlled by `ll_k`, default 4), and `"one_sided"` (asymmetric renormalised filter at the edge; useful in causal mode). See `vignette("04-boundary-modes")` for the full discussion.
+- `extension`: five boundary modes are available: `"symmetric"` (default), `"periodic"`, `"zero"`, `"local_linear"` (linear extrapolation; neighbourhood size controlled by `ll_k`, default 4), and `"one_sided"` (asymmetric renormalised filter at the edge; useful in causal mode). See `vignette("v04-boundary-modes")` for the full discussion.
 
 ## 5. Causal denoising
 
@@ -186,7 +186,7 @@ res_irr = denoise_signal_offline(
 )
 ```
 
-With `t` supplied, interpolating wavelets (`cdf53`, `dd4`, `haar`) replace the fixed-coefficient predict step with Lagrange interpolation at the actual sample positions (Daubechies, Guskov, Schröder, & Sweldens, 1999). Non-interpolating wavelets (`db2`, `cdf97`) emit a warning and fall back to fixed coefficients. Wavelet and boundary recommendations on irregular grids differ substantially from the regular-grid guidance in Section 3 — consult `vignette("05-irregular-grids")` for per-signal guidance and `vignette("07-benchmarks")` for the full empirical comparison.
+With `t` supplied, interpolating wavelets (`cdf53`, `dd4`, `haar`) replace the fixed-coefficient predict step with Lagrange interpolation at the actual sample positions (Daubechies, Guskov, Schröder, & Sweldens, 1999). Non-interpolating wavelets (`db2`, `cdf97`) emit a warning and fall back to fixed coefficients. Wavelet and boundary recommendations on irregular grids differ substantially from the regular-grid guidance in Section 3 — consult `vignette("v05-irregular-grids")` for per-signal guidance and `vignette("v07-benchmarks")` for the full empirical comparison.
 
 For stream mode on irregular grids, pass `t_val` with each sample:
 
@@ -268,13 +268,13 @@ ggplot(
 
 | Vignette | Topics |
 |:---------|:-------|
-| `vignette("02-thresholding-and-tuning")` | MAD noise estimate, universal vs SURE, α/β intuition, `tune_alpha_beta()`, shrinkage choice (hard / soft / semisoft / SCAD) |
-| `vignette("03-causal-stream")` | Window size selection, `update_freq` tuning, per-sample latency, causal-specific wavelet recommendations, warm-up behaviour |
-| `vignette("04-boundary-modes")` | When each of the five boundary extensions matters; `ll_k` for `local_linear`; `one_sided` for real-time |
-| `vignette("05-irregular-grids")` | Lagrange interpolation in predict steps; wavelet selection for non-uniform data; offline `t` vs stream `t_val` mechanisms |
-| `vignette("06-extensions")` | Custom wavelets via `lift_step()` + `custom_wavelet()`; diagnostics; visual comparison of the four shrinkage functions; low-level pipeline |
-| `vignette("07-benchmarks")` | Full mode-by-mode empirical comparison; speed and MSE against `wavethresh`, `adlift`, `nlt`; ring-buffer speed-up over naive sliding-window |
-| `vignette("08-case-study")` (in progress) | End-to-end denoising workflow on a real signal: diagnose, choose wavelet, tune α/β, denoise across the three modes, residual analysis |
+| `vignette("v02-thresholding-and-tuning")` | MAD noise estimate, universal vs SURE, α/β intuition, `tune_alpha_beta()`, shrinkage choice (hard / soft / semisoft / SCAD) |
+| `vignette("v03-causal-stream")` | Window size selection, `update_freq` tuning, per-sample latency, causal-specific wavelet recommendations, warm-up behaviour |
+| `vignette("v04-boundary-modes")` | When each of the five boundary extensions matters; `ll_k` for `local_linear`; `one_sided` for real-time |
+| `vignette("v05-irregular-grids")` | Lagrange interpolation in predict steps; wavelet selection for non-uniform data; offline `t` vs stream `t_val` mechanisms |
+| `vignette("v06-extensions")` | Custom wavelets via `lift_step()` + `custom_wavelet()`; diagnostics; visual comparison of the four shrinkage functions; low-level pipeline |
+| `vignette("v07-benchmarks")` | Full mode-by-mode empirical comparison; speed and MSE against `wavethresh`, `adlift`, `nlt`; ring-buffer speed-up over naive sliding-window |
+| `vignette("v08-case-study")` (in progress) | End-to-end denoising workflow on a real signal: diagnose, choose wavelet, tune α/β, denoise across the three modes, residual analysis |
 
 ## References
 

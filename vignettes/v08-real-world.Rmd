@@ -42,7 +42,7 @@ and sample-by-sample streaming.
 > are reasonable defaults chosen for illustration.  This vignette is not a tuning
 > exercise: no attempt is made to find the configuration that minimises reconstruction
 > error on this specific signal.  For a systematic approach to configuration selection,
-> see `vignette("02-thresholding-and-tuning")` and `vignette("07-benchmarks")` §2–§3.
+> see `vignette("v02-thresholding-and-tuning")` and `vignette("v07-benchmarks")` §2–§3.
 
 ```{r pkgs}
 library(rLifting)
@@ -179,7 +179,7 @@ conservative threshold on this non-stationary signal.
 A single offline pass takes under 0.1 ms for 2 048 samples.  The full configuration
 space — all six wavelets, five boundary modes, and four threshold methods — can be
 exhaustively swept in roughly 4 ms, making grid search a viable calibration strategy
-at production rates (see `vignette("07-benchmarks")` §6).
+at production rates (see `vignette("v07-benchmarks")` §6).
 
 ## 3. Irregular grid — handling sensor dropouts
 
@@ -484,7 +484,7 @@ knitr::kable(
 All four modes operate well under 1 ms per call on a single-night cardiac trace.
 The offline irregular path costs roughly twice the regular path, reflecting the
 Lagrange coefficient computation at each lifting step but no memory allocation in
-the hot path (`vignette("03-causal-stream")` §3).
+the hot path (`vignette("v03-causal-stream")` §3).
 
 The streaming closure processes a sample in ~10 µs — the same order as
 the causal batch mode — and is the appropriate API when samples arrive one at a time
@@ -492,6 +492,6 @@ from a live sensor rather than as a pre-recorded array.
 
 ## Further reading
 
-- `vignette("03-causal-stream")` — warm-up dynamics, `update_freq` tuning, window-size selection.
-- `vignette("05-irregular-grids")` — full irregular-grid API; per-wavelet benchmark table for seven irregular signals.
-- `vignette("07-benchmarks")` — cross-package MSE and throughput comparison on the Donoho–Johnstone test signals.
+- `vignette("v03-causal-stream")` — warm-up dynamics, `update_freq` tuning, window-size selection.
+- `vignette("v05-irregular-grids")` — full irregular-grid API; per-wavelet benchmark table for seven irregular signals.
+- `vignette("v07-benchmarks")` — cross-package MSE and throughput comparison on the Donoho–Johnstone test signals.

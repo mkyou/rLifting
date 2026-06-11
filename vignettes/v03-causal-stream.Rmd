@@ -222,7 +222,7 @@ do.call(
 )
 ```
 
-Summary: `haar` is the dominant causal-mode wavelet on `blocks`, `bumps` and `heavisine`; `cdf97` retains its offline edge only on `doppler`. Use `haar` as the default for new causal/stream applications and switch to `cdf97` only when the signal is known to be smooth and oscillatory. The full mode-by-mode comparison is the subject of `vignette("07-benchmarks")`.
+Summary: `haar` is the dominant causal-mode wavelet on `blocks`, `bumps` and `heavisine`; `cdf97` retains its offline edge only on `doppler`. Use `haar` as the default for new causal/stream applications and switch to `cdf97` only when the signal is known to be smooth and oscillatory. The full mode-by-mode comparison is the subject of `vignette("v07-benchmarks")`.
 
 ## 7. Leakage check by construction
 
@@ -295,7 +295,7 @@ The recommendations below come from established work in the wavelet-denoising li
 | Highly non-stationary noise (bursts) | `update_freq = 1` |
 | Causal denoising on irregular grids | `denoise_signal_causal(x, scheme, t = t_phys, ...)` accepts `t` the same way as offline |
 
-For the broader empirical context — mode-by-mode wavelet comparisons, regular- and irregular-grid results, and package-against-package benchmarks — see `vignette("07-benchmarks")` and the practical guidance in `vignette("01-introduction")` §3. For the threshold subsystem covered briefly in §4 here, see `vignette("02-thresholding-and-tuning")`. The operational reference for the adaptive threshold (formulas for $\hat{\sigma}$, $\lambda_k$, the four shrinkages, and the engine's update protocol) is `inst/notes/02-adaptive-thresholding.md`.
+For the broader empirical context — mode-by-mode wavelet comparisons, regular- and irregular-grid results, and package-against-package benchmarks — see `vignette("v07-benchmarks")` and the practical guidance in `vignette("v01-introduction")` §3. For the threshold subsystem covered briefly in §4 here, see `vignette("v02-thresholding-and-tuning")`. The operational reference for the adaptive threshold (formulas for $\hat{\sigma}$, $\lambda_k$, the four shrinkages, and the engine's update protocol) is `inst/notes/02-adaptive-thresholding.md`.
 
 ## References
 

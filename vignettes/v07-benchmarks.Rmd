@@ -318,7 +318,7 @@ knitr::kable(
 )
 ```
 
-Sliding-window modes pay ~3–5× MSE versus offline on these signals. The penalty has two sources: the finest-level $\hat\sigma$ estimate is computed from $m_1 = W/2$ samples per window instead of $n/2$ samples globally, raising the threshold variance; and the per-window boundary zone is a larger fraction of the work than at offline scale (§6 of `vignette("04-boundary-modes")` covers the boundary side).
+Sliding-window modes pay ~3–5× MSE versus offline on these signals. The penalty has two sources: the finest-level $\hat\sigma$ estimate is computed from $m_1 = W/2$ samples per window instead of $n/2$ samples globally, raising the threshold variance; and the per-window boundary zone is a larger fraction of the work than at offline scale (§6 of `vignette("v04-boundary-modes")` covers the boundary side).
 
 Per-sample times by mode:
 
@@ -650,7 +650,7 @@ Two capabilities that the Pareto chart cannot show because no competitor offers 
 The benchmark covers an opinionated slice of denoising practice. Specifically, none of the conclusions above should be extrapolated to:
 
 - Non-Gaussian noise (Laplacian, $t$-distributed, mixture noise). The MAD-based $\hat\sigma$ in rLifting and the soft/SCAD shrinkages are robust to mild departures from Gaussianity but the relative ranking of the packages on heavy-tailed noise has not been measured here.
-- Non-stationary noise across the signal. The threshold update in causal/stream modes is governed by `update_freq`, which we hold at 1; a real-world workflow may want larger values (10–50, see `vignette("03-causal-stream")` §5).
+- Non-stationary noise across the signal. The threshold update in causal/stream modes is governed by `update_freq`, which we hold at 1; a real-world workflow may want larger values (10–50, see `vignette("v03-causal-stream")` §5).
 - Signals shorter or longer than $N = 1024$. Short signals (say $N < 256$) have small finest-level $d_1$ vectors and the universal threshold is poorly calibrated; long signals (say $N \geq 16384$) widen the per-sample-time gap further in favour of rLifting (since the wall time of all packages scales linearly).
 - Real-world signals. The DJ classics and the seven irregular signals are deliberate canonical cases; ECG, financial tick data, geophysical traces have their own characteristic spectral content and noise structure that may shift the rankings.
 - Adaptive prediction beyond what is in `adlift`. The `adlift` library uses one specific adaptive prediction strategy; richer schemes (e.g. signal-class-specific learnt predictors) may outperform every package in this comparison.
@@ -669,12 +669,12 @@ Within the slice that *is* measured, the rankings above are reliable: each cell 
 | Irregular grid, streaming or low-latency | `rLifting` causal or stream | only package in this benchmark that supports sliding-window denoising on irregular grids |
 | Either grid, MSE is a soft constraint and the application is throughput-bound | `rLifting` (any mode) | the per-sample-time gap dominates everything else |
 
-The recommendations follow the per-signal winners of §2–§7; the package-specific configuration recommendations are in `vignette("02-thresholding-and-tuning")` (regular grids), `vignette("04-boundary-modes")` (per-mode boundary effects), and `vignette("05-irregular-grids")` (irregular grids).
+The recommendations follow the per-signal winners of §2–§7; the package-specific configuration recommendations are in `vignette("v02-thresholding-and-tuning")` (regular grids), `vignette("v04-boundary-modes")` (per-mode boundary effects), and `vignette("v05-irregular-grids")` (irregular grids).
 
 ## 11. Where to look next
 
 - For the underlying mechanism that lets rLifting reach these speeds, see `inst/notes/03-zero-allocation-engine.md`.
-- For the empirical recommendation table specific to irregular grids, see `vignette("05-irregular-grids")` §5.
+- For the empirical recommendation table specific to irregular grids, see `vignette("v05-irregular-grids")` §5.
 - For the cross-package raw data, see `data(benchmark_rlifting)`, `data(benchmark_wavethresh)`, `data(benchmark_adlift)`, `data(benchmark_nlt)`, `data(benchmark_rlifting_irregular)`, `data(benchmark_adlift_irregular)`, and `data(benchmark_nlt_irregular)`.
 
 ## References
