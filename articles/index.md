@@ -16,5 +16,5 @@
   usage](https://mkyou.github.io/rLifting/articles/v06-extensions.md):
 - [7.
   Benchmarks](https://mkyou.github.io/rLifting/articles/v07-benchmarks.md):
-- [08 — Real-world signal denoising: infant cardiac
+- [8. Real-world signal denoising: infant cardiac
   monitoring](https://mkyou.github.io/rLifting/articles/v08-real-world.md):

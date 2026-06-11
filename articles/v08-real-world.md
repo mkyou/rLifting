@@ -1,4 +1,4 @@
-# 08 — Real-world signal denoising: infant cardiac monitoring
+# 8. Real-world signal denoising: infant cardiac monitoring
 
 This vignette applies rLifting to `BabyECG`, a real physiological time
 series bundled with the `wavethresh` package. The signal was recorded in
@@ -133,7 +133,7 @@ cat(
     t_100["elapsed"] / 100 * 1000, length(BabyECG)
   )
 )
-#> Per-call time: 0.09 ms  (N = 2048)
+#> Per-call time: 0.10 ms  (N = 2048)
 ```
 
 ### Residual diagnostics
@@ -386,7 +386,7 @@ cat(
     t_irr_100["elapsed"] / 100 * 1000
   )
 )
-#> Irregular-grid per-call: 0.09 ms
+#> Irregular-grid per-call: 0.10 ms
 ```
 
 The irregular-grid path is approximately twice the cost of the
@@ -426,7 +426,7 @@ cat(
     length(BabyECG), t_stream["elapsed"] * 1000
   )
 )
-#> Total for 2048 samples : 25.0 ms
+#> Total for 2048 samples : 26.0 ms
 
 cat(
   sprintf(
@@ -434,7 +434,7 @@ cat(
     t_stream["elapsed"] / length(BabyECG) * 1e6
   )
 )
-#> Per-sample latency   : 12.2 µs
+#> Per-sample latency   : 12.7 µs
 ```
 
 ``` r
@@ -472,9 +472,9 @@ that point use partial-window thresholds.
 | Mode                |    N | Per-call (ms) | Per-sample (µs) | Wavelet |      Irregular |
 |:--------------------|-----:|--------------:|----------------:|--------:|---------------:|
 | Offline (regular)   | 2048 |          0.09 |            0.04 |   cdf53 |             no |
-| Offline (irregular) | 1434 |          0.09 |            0.06 |   cdf53 | yes (30 % gap) |
-| Causal              | 2048 |         12.72 |            6.21 |    haar |             no |
-| Stream              | 2048 |         25.00 |           12.20 |    haar |             no |
+| Offline (irregular) | 1434 |          0.10 |            0.07 |   cdf53 | yes (30 % gap) |
+| Causal              | 2048 |         12.77 |            6.24 |    haar |             no |
+| Stream              | 2048 |         26.00 |           12.70 |    haar |             no |
 
 Computational summary — BabyECG (N = 2 048, 16 s sampling) {.table
 style="width:100%;"}
