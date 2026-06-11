@@ -1,13 +1,16 @@
-url: ~
+url: https://mkyou.github.io/rLifting/
+
 template:
   bootstrap: 5
 
 articles:
   - title: "User Guide"
     contents:
-      - introduction
-      - benchmark_offline
-      - benchmark_causal
-      - realtime
-      - extensions
-
+      - v01-introduction
+      - v02-thresholding-and-tuning
+      - v03-causal-stream
+      - v04-boundary-modes
+      - v05-irregular-grids
+      - v06-extensions
+      - v07-benchmarks
+      - v08-real-world
