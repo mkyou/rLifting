@@ -6,18 +6,33 @@
 #'
 #' @param signal Numeric vector containing the complete signal.
 #' @param scheme A \code{lifting_scheme} object.
-#' @param alpha Recursive threshold parameter.
-#' @param beta Threshold scale factor.
+#' @param alpha Recursive threshold parameter (universal rule only). Ignored
+#'   when \code{threshold_method = "sure"}.
+#' @param beta Threshold scale factor (universal rule only). Ignored when
+#'   \code{threshold_method = "sure"}.
 #' @param levels Number of decomposition levels.
-#' @param threshold_method Threshold-selection rule. Currently only
-#'   `"universal"` (Donoho-Johnstone universal threshold with the recursive
-#'   per-level decay parameterised by \code{alpha} and \code{beta}).
+#' @param threshold_method Threshold-selection rule. One of \code{"universal"}
+#'   (Donoho-Johnstone universal threshold with the recursive per-level decay
+#'   parameterised by \code{alpha} and \code{beta}) or \code{"sure"}
+#'   (SureShrink: per-level SURE-minimising threshold, capped at the universal
+#'   value; \code{alpha} and \code{beta} are unused).
 #' @param shrinkage Shrinkage rule applied above the threshold:
-#'   `"hard"`, `"soft"`, or `"semisoft"`.
+#'   \code{"hard"}, \code{"soft"}, \code{"semisoft"} (default), or
+#'   \code{"scad"}.
+#' @param a SCAD shape parameter (must be > 2; default 3.7 per Fan & Li 2001).
+#'   Used only when \code{shrinkage = "scad"}.
 #' @param method Deprecated. Use \code{shrinkage} instead. If provided, takes
 #'   precedence over \code{shrinkage} with a deprecation warning.
-#' @param extension Extension mode ("symmetric", "periodic", "zero",
-#'   "local_linear").
+#' @param extension Extension mode: \code{"symmetric"}, \code{"periodic"},
+#'   \code{"zero"}, \code{"local_linear"}, or \code{"one_sided"}.
+#' @param t Optional numeric vector of sample positions for irregular grids.
+#'   Must be sorted and have the same length as \code{signal}. When supplied,
+#'   irregular-grid Lagrange interpolation is applied in the predict steps
+#'   (the scheme is validated by \code{.check_irregular_scheme}). Ignored by
+#'   \code{extension = "one_sided"} (with a warning).
+#' @param ll_k Local-linear neighbourhood size, used only when
+#'   \code{extension = "local_linear"}. Default 4L; minimum 2; clamped to the
+#'   signal length if larger.
 #'
 #' @return Filtered numeric vector (same length as input).
 #' @export
@@ -29,6 +44,7 @@ denoise_signal_offline = function(
   levels = 3,
   threshold_method = "universal",
   shrinkage = NULL,
+  a = 3.7,
   method = NULL,
   extension = "symmetric",
   t = NULL,
@@ -79,7 +95,8 @@ denoise_signal_offline = function(
     as.integer(ext_int),
     t_cpp,
     as.integer(ll_k),
-    as.character(resolved$threshold_method)
+    as.character(resolved$threshold_method),
+    as.numeric(a)
   )
 
   return(res)

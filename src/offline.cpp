@@ -27,13 +27,7 @@ std::vector<double> compute_thresholds_internal(const std::vector<double> &d1,
   if (n == 0)
     return lambdas;
 
-  std::vector<double> abs_x(n);
-  for (int i = 0; i < n; i++)
-    abs_x[i] = std::abs(d1[i]);
-  int mid = n / 2;
-  std::nth_element(abs_x.begin(), abs_x.begin() + mid, abs_x.end());
-  double mad = abs_x[mid];
-  double sigma = mad / 0.6745;
+  double sigma = compute_mad(d1) / 0.6745;
 
   if (sigma < 1e-15)
     return lambdas;
@@ -61,7 +55,8 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
                                   NumericVector norm, int levels, double alpha,
                                   double beta, std::string method,
                                   int ext_mode, NumericVector t, int ll_k = 2,
-                                  std::string threshold_method = "universal") {
+                                  std::string threshold_method = "universal",
+                                  double scad_a = 3.7) {
   // Setup & Parsing
   std::vector<LiftingStep> cpp_steps;
   int n_steps = steps.size();
@@ -164,8 +159,8 @@ NumericVector denoise_offline_cpp(NumericVector signal, List steps,
     lambdas = compute_thresholds_internal(details[0], levels, alpha, beta);
   }
 
-  // SCAD canonical shape parameter (Fan-Li 2001).
-  const double SCAD_A = 3.7;
+  // SCAD shape parameter (Fan-Li 2001), configurable per call.
+  const double SCAD_A = scad_a;
 
   for (int j = 0; j < levels; j++) {
     double lam = lambdas[j];

@@ -22,6 +22,8 @@ public:
   int ext_mode;
   int ll_k;
   bool irregular;
+  double scad_a;
+  bool lambdas_initialized;
 
   // Buffer State
   std::vector<double> ring_buffer;
@@ -42,7 +44,8 @@ public:
 
   // Constructor
   WaveletEngine(List r_steps, NumericVector norm, int lvl, int w_size,
-                int mode, bool irreg = false, int k = 2) {
+                int mode, bool irreg = false, int k = 2,
+                double scad_a_val = 3.7) {
     window_size = w_size;
     levels = lvl;
     ext_mode = mode;
@@ -50,6 +53,8 @@ public:
     norm_approx = norm[0];
     norm_detail = norm[1];
     irregular = irreg;
+    scad_a = scad_a_val;
+    lambdas_initialized = false;
 
     int n_steps = r_steps.size();
     for (int i = 0; i < n_steps; i++) {
@@ -109,13 +114,7 @@ public:
     int n1 = d1.size();
     if (n1 == 0) return;
 
-    std::vector<double> abs_d1(n1);
-    for (int i = 0; i < n1; i++) abs_d1[i] = std::abs(d1[i]);
-
-    int mid = n1 / 2;
-    std::nth_element(abs_d1.begin(), abs_d1.begin() + mid, abs_d1.end());
-    double mad = abs_d1[mid];
-    double sigma = mad / 0.6745;
+    double sigma = compute_mad(d1) / 0.6745;
 
     if (sigma < 1e-15) {
       std::fill(current_lambdas.begin(), current_lambdas.end(), 0.0);
@@ -229,12 +228,17 @@ public:
       for (int i = 0; i < n_odd;  i++) odd[i]  *= norm_detail;
     }
 
-    // Thresholding
-    if (step_iter % update_freq == 0)
+    // Thresholding. update_freq <= 0 means "freeze after first update".
+    bool should_update = (update_freq > 0)
+                            ? (step_iter % update_freq == 0)
+                            : !lambdas_initialized;
+    if (should_update) {
       update_thresholds(alpha, beta, threshold_method);
+      lambdas_initialized = true;
+    }
 
-    // SCAD canonical shape parameter (Fan-Li 2001).
-    const double SCAD_A = 3.7;
+    // SCAD shape parameter (Fan-Li 2001), configurable per engine.
+    const double SCAD_A = scad_a;
 
     for (int j = 0; j < levels; j++) {
       double lam    = current_lambdas[j];

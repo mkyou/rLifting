@@ -3,9 +3,12 @@
 #' Reconstructs the original signal from wavelet coefficients.
 #' Optimized with 'C++' backend.
 #'
-#' @param lwt_obj Object of class 'lwt' returned by `lwt()`.
-#' @param scheme (Optional) `lifting_scheme` object.
-#'  If NULL, uses the one from `lwt_obj`.
+#' @param lwt_obj Object of class \code{lwt} returned by \code{lwt()}.
+#'   The fields \code{extension}, \code{ll_k}, and \code{t} carried by the
+#'   object are reused to mirror the forward transform; the inverse cannot
+#'   be invoked with a different boundary mode or grid.
+#' @param scheme (Optional) \code{lifting_scheme} object.
+#'   If NULL, uses the one from \code{lwt_obj}.
 #'
 #' @return Numeric vector containing the reconstructed signal.
 #' @export

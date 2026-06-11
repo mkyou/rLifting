@@ -79,6 +79,14 @@ tune_alpha_beta = function(signal, scheme, levels = 3,
     refined_val = best_val
   }
 
+  if (opt$convergence != 0L) {
+    warning(
+      "tune_alpha_beta: optimisation did not converge (code ",
+      opt$convergence, "). Results may be suboptimal.",
+      call. = FALSE
+    )
+  }
+
   list(
     alpha = unname(alpha_opt),
     beta = unname(beta_opt),

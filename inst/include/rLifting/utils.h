@@ -15,31 +15,31 @@ struct LiftingStep {
     int degree = -1;  // -1 = fixed coeffs (regular grid only)
                       //  0 = Haar (nearest-neighbour)
                       //  1 = linear interpolation
-                      //  3 = cubic interpolation (Lagrange, 4-point)
+                      //  k>=3 = k-point Lagrange interpolation (cubic for k=4)
 };
 
 // Position-aware interpolation for irregular-grid predict steps.
 // Returns the predicted value at position t_target given k neighbours
 // at positions t_nbr[] with signal values x_nbr[].
-// degree 0: nearest left neighbour (Haar)
-// degree 1: linear interpolation (2 points)
-// degree 3: Lagrange cubic interpolation (4 points)
+// k == 1: nearest left neighbour (degree 0, Haar)
+// k == 2: linear interpolation (degree 1)
+// k >= 3: general k-point Lagrange interpolation (degree k - 1)
 inline double interp_predict(
         const std::vector<double>& x_nbr,
         const std::vector<double>& t_nbr,
         int k, double t_target
 ) {
     if (k == 0) return 0.0;
-    if (k == 1) return x_nbr[0];            // degree 0
+    if (k == 1) return x_nbr[0];
 
-    if (k == 2) {                            // degree 1: linear
+    if (k == 2) {
         double span = t_nbr[1] - t_nbr[0];
         if (std::abs(span) < 1e-15) return 0.5 * (x_nbr[0] + x_nbr[1]);
         double w1 = (t_target - t_nbr[0]) / span;
         return x_nbr[0] * (1.0 - w1) + x_nbr[1] * w1;
     }
 
-    // degree 3: 4-point Lagrange (k == 4)
+    // General k-point Lagrange interpolation (used for k >= 3, e.g. cdf53 / dd4).
     double result = 0.0;
     for (int i = 0; i < k; i++) {
         double w = 1.0;
@@ -53,6 +53,33 @@ inline double interp_predict(
         result += w * x_nbr[i];
     }
     return result;
+}
+
+// Median Absolute Deviation — centered version: median(|x - median(x)|).
+// Robust to non-zero-centered distributions (asymmetric noise, drift).
+// Divide the return value by 0.6745 for a Fisher-consistent sigma estimate.
+inline double compute_mad(const std::vector<double>& vals) {
+    int n = vals.size();
+    if (n == 0) return 0.0;
+    int mid = n / 2;
+
+    std::vector<double> tmp(vals);
+    std::nth_element(tmp.begin(), tmp.begin() + mid, tmp.end());
+    double med = tmp[mid];
+    if (n % 2 == 0) {
+        std::nth_element(tmp.begin(), tmp.begin() + mid - 1, tmp.begin() + mid);
+        med = (med + tmp[mid - 1]) / 2.0;
+    }
+
+    for (int i = 0; i < n; i++) tmp[i] = std::abs(vals[i] - med);
+
+    std::nth_element(tmp.begin(), tmp.begin() + mid, tmp.end());
+    double mad_val = tmp[mid];
+    if (n % 2 == 0) {
+        std::nth_element(tmp.begin(), tmp.begin() + mid - 1, tmp.begin() + mid);
+        mad_val = (mad_val + tmp[mid - 1]) / 2.0;
+    }
+    return mad_val;
 }
 
 // Inline Helper Functions
@@ -185,11 +212,7 @@ inline double compute_sure_lambda_level(const std::vector<double> &d) {
     std::vector<double> abs_d(n);
     for (int i = 0; i < n; i++) abs_d[i] = std::abs(d[i]);
 
-    std::vector<double> abs_for_mad = abs_d;
-    int mid = n / 2;
-    std::nth_element(abs_for_mad.begin(), abs_for_mad.begin() + mid,
-                     abs_for_mad.end());
-    double sigma = abs_for_mad[mid] / 0.6745;
+    double sigma = compute_mad(d) / 0.6745;
     if (sigma < 1e-15) return 0.0;
 
     std::sort(abs_d.begin(), abs_d.end());

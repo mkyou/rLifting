@@ -1,3 +1,16 @@
+.validate_update_freq = function(update_freq) {
+  if (!is.numeric(update_freq) || length(update_freq) != 1L)
+    stop("update_freq must be a single integer.")
+  if (update_freq < 0)
+    stop("update_freq must be a non-negative integer.")
+  if (update_freq == 0)
+    warning(
+      "update_freq = 0: thresholds will be computed once after warm-up ",
+      "and held fixed (never recomputed)."
+    )
+  invisible(update_freq)
+}
+
 #' Create an Adaptive Wavelet Stream Processor ('C++' Core)
 #'
 #' Generates a stateful function backed by a high-performance 'C++'
@@ -9,18 +22,29 @@
 #' @param scheme A \code{lifting_scheme} object.
 #' @param window_size Sliding window size (W). Must be > 8.
 #' @param levels Decomposition levels (default 1).
-#' @param alpha Threshold decay parameter (Eq 9).
-#' @param beta Threshold gain factor (Eq 9).
-#' @param threshold_method Threshold-selection rule. Currently only
-#'   `"universal"`.
-#' @param shrinkage Shrinkage rule: `"hard"`, `"soft"`, or `"semisoft"`.
+#' @param alpha Threshold decay parameter (universal rule only). Ignored when
+#'   \code{threshold_method = "sure"}.
+#' @param beta Threshold gain factor (universal rule only). Ignored when
+#'   \code{threshold_method = "sure"}.
+#' @param threshold_method Threshold-selection rule. One of \code{"universal"}
+#'   or \code{"sure"} (per-level SURE-minimising threshold, capped at the
+#'   universal value; \code{alpha} and \code{beta} are unused).
+#' @param shrinkage Shrinkage rule: \code{"hard"}, \code{"soft"},
+#'   \code{"semisoft"} (default), or \code{"scad"}.
+#' @param a SCAD shape parameter (must be > 2; default 3.7 per Fan & Li 2001).
+#'   Used only when \code{shrinkage = "scad"}.
 #' @param method Deprecated. Use \code{shrinkage} instead.
-#' @param extension Boundary handling ('symmetric', 'periodic', 'zero',
-#'   'local_linear').
+#' @param extension Boundary handling: \code{"symmetric"}, \code{"periodic"},
+#'   \code{"zero"}, \code{"local_linear"}, or \code{"one_sided"}.
 #' @param update_freq How often to recompute threshold statistics (default 1).
+#'   Set to \code{0} to freeze thresholds at the warm-up estimate (a warning
+#'   is emitted). Negative values are rejected.
 #' @param irregular Logical. If TRUE, the returned closure accepts a second
 #'   argument \code{t_val} (the sample's time position) and applies
 #'   position-aware interpolation in the predict steps.
+#' @param ll_k Local-linear neighbourhood size, used only when
+#'   \code{extension = "local_linear"}. Default 4L; minimum 2; clamped to
+#'   \code{window_size} if larger.
 #'
 #' @return A closure \code{processor(new_sample, t_val = NULL)} that accepts
 #' one sample (and optionally its time position) and returns the filtered
@@ -34,6 +58,7 @@ new_wavelet_stream = function(
   beta = 1.2,
   threshold_method = "universal",
   shrinkage = NULL,
+  a = 3.7,
   method = NULL,
   extension = "symmetric",
   update_freq = 1,
@@ -42,6 +67,8 @@ new_wavelet_stream = function(
 ) {
 
   resolved = .resolve_shrinkage_args(method, shrinkage, threshold_method)
+
+  .validate_update_freq(update_freq)
 
   if (window_size < 8) stop("window_size must be at least 8.")
   if (window_size %% 2L == 0L) window_size = window_size + 1L
@@ -72,7 +99,8 @@ new_wavelet_stream = function(
     as.integer(window_size),
     as.integer(ext_int),
     as.logical(irregular),
-    as.integer(ll_k)
+    as.integer(ll_k),
+    as.numeric(a)
   )
 
   step_iter = 0
@@ -145,17 +173,29 @@ print.wavelet_stream = function(x, ...) {
 #' @param scheme \code{lifting_scheme} object.
 #' @param levels Decomposition levels.
 #' @param window_size Window size.
-#' @param alpha Threshold decay parameter (Eq 9).
-#' @param beta Threshold gain factor (Eq 9).
-#' @param threshold_method Threshold-selection rule. Currently only
-#'   `"universal"`.
-#' @param shrinkage Shrinkage rule: `"hard"`, `"soft"`, or `"semisoft"`.
+#' @param alpha Threshold decay parameter (universal rule only). Ignored when
+#'   \code{threshold_method = "sure"}.
+#' @param beta Threshold gain factor (universal rule only). Ignored when
+#'   \code{threshold_method = "sure"}.
+#' @param threshold_method Threshold-selection rule. One of \code{"universal"}
+#'   or \code{"sure"} (per-level SURE-minimising threshold, capped at the
+#'   universal value; \code{alpha} and \code{beta} are unused).
+#' @param shrinkage Shrinkage rule: \code{"hard"}, \code{"soft"},
+#'   \code{"semisoft"} (default), or \code{"scad"}.
+#' @param a SCAD shape parameter (must be > 2; default 3.7 per Fan & Li 2001).
+#'   Used only when \code{shrinkage = "scad"}.
 #' @param method Deprecated. Use \code{shrinkage} instead.
-#' @param extension Boundary treatment ('symmetric', 'periodic', 'zero',
-#'   'local_linear').
-#' @param update_freq Frequency of threshold updates.
+#' @param extension Boundary treatment: \code{"symmetric"}, \code{"periodic"},
+#'   \code{"zero"}, \code{"local_linear"}, or \code{"one_sided"}.
+#' @param update_freq Frequency of threshold updates. Set to \code{0} to
+#'   freeze thresholds at the warm-up estimate (a warning is emitted).
+#'   Negative values are rejected.
 #' @param t Optional numeric vector of sample time positions (irregular grid).
-#'   Must be sorted and the same length as \code{signal}.
+#'   Must be sorted and the same length as \code{signal}. Ignored by
+#'   \code{extension = "one_sided"} (with a warning).
+#' @param ll_k Local-linear neighbourhood size, used only when
+#'   \code{extension = "local_linear"}. Default 4L; minimum 2; clamped to
+#'   \code{window_size} if larger.
 #'
 #' @return Filtered vector (same length as input).
 #' @export
@@ -168,6 +208,7 @@ denoise_signal_causal = function(
   beta = 1.2,
   threshold_method = "universal",
   shrinkage = NULL,
+  a = 3.7,
   method = NULL,
   extension = "symmetric",
   update_freq = 1,
@@ -176,6 +217,8 @@ denoise_signal_causal = function(
 ) {
 
   resolved = .resolve_shrinkage_args(method, shrinkage, threshold_method)
+
+  .validate_update_freq(update_freq)
 
   if (window_size %% 2L == 0L) window_size = window_size + 1L
   if (extension == "local_linear" && ll_k > window_size)
@@ -218,7 +261,8 @@ denoise_signal_causal = function(
     as.integer(update_freq),
     t_cpp,
     as.integer(ll_k),
-    as.character(resolved$threshold_method)
+    as.character(resolved$threshold_method),
+    as.numeric(a)
   )
 
   return(output)

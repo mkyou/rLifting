@@ -55,6 +55,12 @@ threshold_scad = function(x, lambda, a = 3.7) {
 #' @param lambda Positive threshold value.
 #'
 #' @return Processed vector.
+#'
+#' @references
+#' Liu, Z., Mi, Y., & Mao, Y. (2014). Improved real-time denoising method
+#' based on lifting wavelet transform. \emph{Measurement Science Review},
+#' 14(3), 152--159. \doi{10.2478/msr-2014-0020}
+#'
 #' @export
 threshold_semisoft = function(x, lambda) {
   threshold_semisoft_cpp(as.numeric(x), as.numeric(lambda))
@@ -64,7 +70,10 @@ threshold_semisoft = function(x, lambda) {
 #'
 #' @param x Input vector.
 #' @param lambda Threshold value.
-#' @param method Method: "hard", "soft" or "semisoft".
+#' @param method One of \code{"hard"}, \code{"soft"}, \code{"semisoft"}, or
+#'   \code{"scad"}.
+#' @param a SCAD shape parameter, ignored unless \code{method = "scad"}.
+#'   Default 3.7 (Fan-Li canonical).
 #'
 #' @return Numeric vector of the same length as \code{x} with thresholded coefficients.
 #' @export

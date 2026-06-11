@@ -161,19 +161,32 @@ plot.lifting_scheme = function(x, ...) {
 #' Helper function to create prediction (P) or update (U) steps,
 #' abstracting the complexity of index management.
 #'
-#' @param type Step type: "predict" (P) or "update" (U).
+#' @param type Step type: \code{"predict"} (P) or \code{"update"} (U).
 #' @param coeffs Numeric vector containing the filter coefficients.
 #' @param start_idx (Optional) Manual start index. If provided, ignores the
-#'        \code{position} parameter. Use this for fine-grained control.
-#' @param position Automatic index adjustment
-#'  (used only if \code{start_idx} is NULL):
-#' \itemize{
-#'   \item "center": Centers the filter (default).
-#'   \item "left": Causal filter (looks into the past).
-#'   \item "right": Anti-causal filter (looks into the future).
-#' }
+#'   \code{position} parameter. Use this for fine-grained control. The filter
+#'   reads neighbours at offsets \code{start_idx + 0..(length(coeffs) - 1)}
+#'   relative to the current index.
+#' @param position Automatic index adjustment, used only when
+#'   \code{start_idx} is \code{NULL}:
+#'   \itemize{
+#'     \item \code{"center"}: centres the filter (default).
+#'       \code{start_idx = -floor((length(coeffs) - 1) / 2)}.
+#'     \item \code{"left"}: causal filter (looks into the past).
+#'       \code{start_idx = -length(coeffs) + 1}.
+#'     \item \code{"right"}: anti-causal filter (looks into the future).
+#'       \code{start_idx = 0}.
+#'   }
+#' @param degree (Optional) Polynomial degree the predict step reproduces
+#'   exactly. Drives the irregular-grid Lagrange interpolation
+#'   (see \code{vignette("v06-extensions")}). If \code{NULL}, inferred as
+#'   \code{length(coeffs) - 1} when \code{type == "predict"} and
+#'   \code{sum(coeffs) == 1} (interpolating filter); otherwise \code{-1}
+#'   (filter not interpretable as polynomial interpolation, e.g. CDF 9/7 or
+#'   DB2 predicts). Update steps always carry \code{degree = -1}.
 #'
-#' @return A list formatted for the internal lifting engine.
+#' @return A list \code{list(type, coeffs, start_idx, degree)} formatted for
+#'   the internal lifting engine.
 #' @export
 lift_step = function(
   type = c("predict", "update"),

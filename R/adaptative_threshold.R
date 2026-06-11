@@ -1,14 +1,29 @@
-#' Calculate Adaptive Threshold (Recursive)
+#' Calculate Adaptive Threshold (Universal / Recursive)
 #'
-#' Estimates the optimal noise threshold based on current window statistics.
-#' Implements the recursive formula from Liu et al. (2014).
-#' Accelerated with 'C++'.
+#' Estimates the per-level noise threshold from the finest-level detail
+#' coefficients and applies the recursive Liu et al. (2014) decay across
+#' levels. This is the step-by-step entry point for the universal threshold
+#' rule.
+#'
+#' To use SureShrink instead, call \code{denoise_signal_offline()} or the
+#' causal/stream functions with \code{threshold_method = "sure"} — the SURE
+#' branch lives in the C++ engine and is not exposed as a standalone R
+#' routine. For automatic selection of \code{alpha} and \code{beta},
+#' see \code{\link{tune_alpha_beta}}.
 #'
 #' @param lwt_obj Object returned by \code{lwt()}.
-#' @param alpha Recursive adjustment parameter (Eq. 9).
-#' @param beta Initial threshold scale factor (Eq. 9).
+#' @param alpha Recursive adjustment parameter (Eq. 9 of Liu et al., 2014).
+#' @param beta Initial threshold scale factor (Eq. 9 of Liu et al., 2014).
 #'
 #' @return Object of class \code{adaptive_thresholds} (a list of thresholds).
+#'
+#' @references
+#' Donoho, D. L., & Johnstone, I. M. (1994). Ideal spatial adaptation by
+#' wavelet shrinkage. \emph{Biometrika}, 81(3), 425--455.
+#'
+#' Liu, Z., Mi, Y., & Mao, Y. (2014). Improved real-time denoising method
+#' based on lifting wavelet transform. \emph{Measurement Science Review},
+#' 14(3), 152--159. \doi{10.2478/msr-2014-0020}
 #' @export
 compute_adaptive_threshold = function(lwt_obj, alpha = 0.3, beta = 1.2) {
 

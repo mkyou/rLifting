@@ -1,33 +1,17 @@
+#include "utils.h"
 #include <Rcpp.h>
-#include <algorithm> // std::nth_element
-#include <cmath> // log, sqrt
+#include <algorithm>
+#include <cmath>
 
 using namespace Rcpp;
 
-// Helper: Median Absolute Deviation (MAD) in C++
- // @keywords internal
- double calc_mad(NumericVector x) {
-    int n = x.size();
-    if (n == 0) return 0.0;
-
-    // Copy absolute values
-    std::vector<double> abs_x(n);
-    for(int i=0; i<n; i++) abs_x[i] = std::abs(x[i]);
-
-    // Selection algorithm (faster than full sort)
-    int mid = n / 2;
-    std::nth_element(abs_x.begin(), abs_x.begin() + mid, abs_x.end());
-
-    double median = abs_x[mid];
-
-    // For even n, average the two middle elements
-    if (n % 2 == 0) {
-       std::nth_element(abs_x.begin(), abs_x.begin() + mid - 1, abs_x.end());
-       median = (median + abs_x[mid - 1]) / 2.0;
-    }
-
-    return median;
- }
+// Median Absolute Deviation (canonical) exposed to R for testing
+// and downstream use. Delegates to compute_mad in inst/include/rLifting/utils.h.
+// [[Rcpp::export]]
+double compute_mad_cpp(NumericVector x) {
+    std::vector<double> vals(x.begin(), x.end());
+    return compute_mad(vals);
+}
 
  // Adaptive Threshold Calculation (C++)
  //
@@ -45,8 +29,8 @@ using namespace Rcpp;
  ) {
     NumericVector lambdas(max_level);
 
-    double mad_val = calc_mad(d1);
-    double sigma = mad_val / 0.6745;
+    std::vector<double> d1_vals(d1.begin(), d1.end());
+    double sigma = compute_mad(d1_vals) / 0.6745;
 
     if (sigma < 1e-15) {
        return lambdas;

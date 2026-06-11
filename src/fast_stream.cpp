@@ -14,9 +14,10 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 SEXP create_engine_cpp(List steps, NumericVector norm, int levels,
                        int window_size, int ext_mode, bool irregular,
-                       int ll_k = 2) {
+                       int ll_k = 2, double scad_a = 3.7) {
   WaveletEngine *engine =
-      new WaveletEngine(steps, norm, levels, window_size, ext_mode, irregular, ll_k);
+      new WaveletEngine(steps, norm, levels, window_size, ext_mode, irregular,
+                        ll_k, scad_a);
   Rcpp::XPtr<WaveletEngine> ptr(engine, true);
   return ptr;
 }
@@ -44,12 +45,14 @@ NumericVector run_causal_batch_cpp(NumericVector signal, List steps,
                                    std::string method, int ext_mode,
                                    int update_freq, NumericVector t,
                                    int ll_k = 2,
-                                   std::string threshold_method = "universal") {
+                                   std::string threshold_method = "universal",
+                                   double scad_a = 3.7) {
   int n = signal.size();
   NumericVector output(n);
 
   bool irreg = ((int)t.size() == n);
-  WaveletEngine engine(steps, norm, levels, window_size, ext_mode, irreg, ll_k);
+  WaveletEngine engine(steps, norm, levels, window_size, ext_mode, irreg, ll_k,
+                       scad_a);
 
   for (int i = 0; i < n; i++) {
     double t_val = irreg ? t[i] : 0.0;
