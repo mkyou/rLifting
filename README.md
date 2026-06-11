@@ -20,13 +20,13 @@ On regular grids, `rLifting` is ~40× faster per sample than `wavethresh` and ~4
 
 ## Features
 
-- **Three processing modes** with the same API: `denoise_signal_offline`, `denoise_signal_causal`, `new_wavelet_stream`.
-- **Six built-in wavelets**: `haar`, `db2`, `cdf53`, `cdf97`, `dd4`, `lazy`. Extensible via `lift_step()` + `custom_wavelet()`.
-- **Four shrinkage methods**: hard, soft, semisoft (default), SCAD (Antoniadis & Fan, 2001).
-- **Two threshold-selection rules**: universal (VisuShrink, recursive α/β decay) and SURE (SureShrink, per-level Stein risk). `tune_alpha_beta()` minimises SURE to select α and β automatically.
-- **Five boundary extensions**: `symmetric` (default), `periodic`, `zero`, `local_linear` (OLS extrapolation, neighbourhood `ll_k`), `one_sided` (renormalised filter at the edge).
-- **Irregular-grid support** in every mode: pass `t` to batch functions, or `t_val` per sample to the stream closure.
-- **Diagnostic suite**: `diagnose_wavelet()` verifies perfect reconstruction, vanishing moments, orthogonality, compact support, and shift sensitivity.
+- Three processing modes with the same API: `denoise_signal_offline`, `denoise_signal_causal`, `new_wavelet_stream`.
+- Six built-in wavelets: `haar`, `db2`, `cdf53`, `cdf97`, `dd4`, `lazy`. Extensible via `lift_step()` + `custom_wavelet()`.
+- Four shrinkage methods: hard, soft, semisoft (default), SCAD (Antoniadis & Fan, 2001).
+- Two threshold-selection rules: universal (VisuShrink, recursive α/β decay) and SURE (SureShrink, per-level Stein risk). `tune_alpha_beta()` minimises SURE to select α and β automatically.
+- Five boundary extensions: `symmetric` (default), `periodic`, `zero`, `local_linear` (OLS extrapolation, neighbourhood `ll_k`), `one_sided` (renormalised filter at the edge).
+- Irregular-grid support in every mode: pass `t` to batch functions, or `t_val` per sample to the stream closure.
+- Diagnostic suite: `diagnose_wavelet()` verifies perfect reconstruction, vanishing moments, orthogonality, compact support, and shift sensitivity.
 
 ---
 
@@ -86,9 +86,9 @@ remotes::install_github("mkyou/rLifting")
 ```r
 library(rLifting)
 
-scheme <- lifting_scheme("cdf53")
+scheme = lifting_scheme("cdf53")
 
-clean <- denoise_signal_offline(
+clean = denoise_signal_offline(
   noisy_signal, scheme,
   levels = 4,
   shrinkage   = "semisoft",
@@ -100,7 +100,7 @@ clean <- denoise_signal_offline(
 ### Causal denoising (sliding window, no look-ahead)
 
 ```r
-clean_causal <- denoise_signal_causal(
+clean_causal = denoise_signal_causal(
   noisy_signal, scheme,
   window_size = 255, levels = 4,
   shrinkage   = "semisoft"
@@ -110,15 +110,15 @@ clean_causal <- denoise_signal_causal(
 ### Stream processing (sample by sample)
 
 ```r
-processor <- new_wavelet_stream(
+processor = new_wavelet_stream(
   lifting_scheme("haar"),
   window_size = 255, levels = 4,
   shrinkage   = "semisoft", update_freq = 1
 )
 
-out <- numeric(length(noisy_signal))
+out = numeric(length(noisy_signal))
 for (i in seq_along(noisy_signal)) {
-  out[i] <- processor(noisy_signal[i])
+  out[i] = processor(noisy_signal[i])
 }
 ```
 
@@ -126,7 +126,7 @@ for (i in seq_along(noisy_signal)) {
 
 ```r
 # Batch (offline or causal): pass t alongside the signal
-clean_irr <- denoise_signal_offline(
+clean_irr = denoise_signal_offline(
   y_irr, lifting_scheme("cdf53"),
   t = t_phys, levels = 4,
   extension = "local_linear",
@@ -134,21 +134,21 @@ clean_irr <- denoise_signal_offline(
 )
 
 # Stream: pass t_val per sample
-proc_irr <- new_wavelet_stream(
+proc_irr = new_wavelet_stream(
   lifting_scheme("cdf53"), irregular = TRUE,
   window_size = 255, levels = 4
 )
 for (i in seq_along(y_irr)) {
-  out[i] <- proc_irr(y_irr[i], t_val = t_phys[i])
+  out[i] = proc_irr(y_irr[i], t_val = t_phys[i])
 }
 ```
 
 ### Automatic parameter tuning
 
 ```r
-tuned <- tune_alpha_beta(signal, lifting_scheme("cdf53"), levels = 4)
+tuned = tune_alpha_beta(signal, lifting_scheme("cdf53"), levels = 4)
 
-clean <- denoise_signal_offline(
+clean = denoise_signal_offline(
   noisy_signal, lifting_scheme("cdf53"),
   levels = 4,
   alpha = tuned$alpha, beta = tuned$beta
@@ -173,14 +173,14 @@ Eight vignettes form a self-contained learning path, ordered from tour to refere
 | 8 | `v08-real-world` | End-to-end case study on infant cardiac monitoring (BabyECG); offline, irregular-grid, and stream modes |
 
 ```r
-vignette("v01-introduction",          package = "rLifting")
+vignette("v01-introduction", package = "rLifting")
 vignette("v02-thresholding-and-tuning", package = "rLifting")
-vignette("v03-causal-stream",         package = "rLifting")
-vignette("v04-boundary-modes",        package = "rLifting")
-vignette("v05-irregular-grids",       package = "rLifting")
-vignette("v06-extensions",            package = "rLifting")
-vignette("v07-benchmarks",            package = "rLifting")
-vignette("v08-real-world",            package = "rLifting")
+vignette("v03-causal-stream", package = "rLifting")
+vignette("v04-boundary-modes", package = "rLifting")
+vignette("v05-irregular-grids", package = "rLifting")
+vignette("v06-extensions", package = "rLifting")
+vignette("v07-benchmarks", package = "rLifting")
+vignette("v08-real-world", package = "rLifting")
 ```
 
 ### Design notes (`inst/notes/`)
