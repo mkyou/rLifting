@@ -23,3 +23,10 @@ threshold_semisoft(x, lambda)
 ## Value
 
 Processed vector.
+
+## References
+
+Liu, Z., Mi, Y., & Mao, Y. (2014). Improved real-time denoising method
+based on lifting wavelet transform. *Measurement Science Review*, 14(3),
+152–159.
+[doi:10.2478/msr-2014-0020](https://doi.org/10.2478/msr-2014-0020)

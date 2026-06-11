@@ -14,9 +14,14 @@ denoise_signal_causal(
   window_size = 256,
   alpha = 0.3,
   beta = 1.2,
-  method = "semisoft",
+  threshold_method = "universal",
+  shrinkage = NULL,
+  a = 3.7,
+  method = NULL,
   extension = "symmetric",
-  update_freq = 1
+  update_freq = 1,
+  t = NULL,
+  ll_k = 4L
 )
 ```
 
@@ -40,23 +45,55 @@ denoise_signal_causal(
 
 - alpha:
 
-  Threshold decay parameter (Eq 9).
+  Threshold decay parameter (universal rule only). Ignored when
+  `threshold_method = "sure"`.
 
 - beta:
 
-  Threshold gain factor (Eq 9).
+  Threshold gain factor (universal rule only). Ignored when
+  `threshold_method = "sure"`.
+
+- threshold_method:
+
+  Threshold-selection rule. One of `"universal"` or `"sure"` (per-level
+  SURE-minimising threshold, capped at the universal value; `alpha` and
+  `beta` are unused).
+
+- shrinkage:
+
+  Shrinkage rule: `"hard"`, `"soft"`, `"semisoft"` (default), or
+  `"scad"`.
+
+- a:
+
+  SCAD shape parameter (must be \> 2; default 3.7 per Fan & Li 2001).
+  Used only when `shrinkage = "scad"`.
 
 - method:
 
-  Thresholding method ("soft", "hard", "semisoft").
+  Deprecated. Use `shrinkage` instead.
 
 - extension:
 
-  Boundary treatment ('symmetric', 'periodic').
+  Boundary treatment: `"symmetric"`, `"periodic"`, `"zero"`,
+  `"local_linear"`, or `"one_sided"`.
 
 - update_freq:
 
-  Frequency of threshold updates.
+  Frequency of threshold updates. Set to `0` to freeze thresholds at the
+  warm-up estimate (a warning is emitted). Negative values are rejected.
+
+- t:
+
+  Optional numeric vector of sample time positions (irregular grid).
+  Must be sorted and the same length as `signal`. Ignored by
+  `extension = "one_sided"` (with a warning).
+
+- ll_k:
+
+  Local-linear neighbourhood size, used only when
+  `extension = "local_linear"`. Default 4L; minimum 2; clamped to
+  `window_size` if larger.
 
 ## Value
 

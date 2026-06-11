@@ -5,7 +5,7 @@ General Thresholding Wrapper
 ## Usage
 
 ``` r
-threshold(x, lambda, method = "soft")
+threshold(x, lambda, method = "soft", a = 3.7)
 ```
 
 ## Arguments
@@ -20,7 +20,12 @@ threshold(x, lambda, method = "soft")
 
 - method:
 
-  Method: "hard", "soft" or "semisoft".
+  One of `"hard"`, `"soft"`, `"semisoft"`, or `"scad"`.
+
+- a:
+
+  SCAD shape parameter, ignored unless `method = "scad"`. Default 3.7
+  (Fan-Li canonical).
 
 ## Value
 

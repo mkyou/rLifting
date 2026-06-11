@@ -10,7 +10,8 @@ lift_step(
   type = c("predict", "update"),
   coeffs,
   start_idx = NULL,
-  position = "center"
+  position = "center",
+  degree = NULL
 )
 ```
 
@@ -18,7 +19,7 @@ lift_step(
 
 - type:
 
-  Step type: "predict" (P) or "update" (U).
+  Step type: `"predict"` (P) or `"update"` (U).
 
 - coeffs:
 
@@ -27,18 +28,34 @@ lift_step(
 - start_idx:
 
   (Optional) Manual start index. If provided, ignores the `position`
-  parameter. Use this for fine-grained control.
+  parameter. Use this for fine-grained control. The filter reads
+  neighbours at offsets `start_idx + 0..(length(coeffs) - 1)` relative
+  to the current index.
 
 - position:
 
-  Automatic index adjustment (used only if `start_idx` is NULL):
+  Automatic index adjustment, used only when `start_idx` is `NULL`:
 
-  - "center": Centers the filter (default).
+  - `"center"`: centres the filter (default).
+    `start_idx = -floor((length(coeffs) - 1) / 2)`.
 
-  - "left": Causal filter (looks into the past).
+  - `"left"`: causal filter (looks into the past).
+    `start_idx = -length(coeffs) + 1`.
 
-  - "right": Anti-causal filter (looks into the future).
+  - `"right"`: anti-causal filter (looks into the future).
+    `start_idx = 0`.
+
+- degree:
+
+  (Optional) Polynomial degree the predict step reproduces exactly.
+  Drives the irregular-grid Lagrange interpolation (see
+  [`vignette("v06-extensions")`](https://mkyou.github.io/rLifting/articles/v06-extensions.md)).
+  If `NULL`, inferred as `length(coeffs) - 1` when `type == "predict"`
+  and `sum(coeffs) == 1` (interpolating filter); otherwise `-1` (filter
+  not interpretable as polynomial interpolation, e.g. CDF 9/7 or DB2
+  predicts). Update steps always carry `degree = -1`.
 
 ## Value
 
-A list formatted for the internal lifting engine.
+A list `list(type, coeffs, start_idx, degree)` formatted for the
+internal lifting engine.

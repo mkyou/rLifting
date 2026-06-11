@@ -1,10 +1,16 @@
-pandoc: 3.1.11
+pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  benchmark_causal: benchmark_causal.html
-  benchmark_offline: benchmark_offline.html
-  extensions: extensions.html
-  introduction: introduction.html
-  realtime: realtime.html
-last_built: 2026-03-05T17:40Z
+  v01-introduction: v01-introduction.html
+  v02-thresholding-and-tuning: v02-thresholding-and-tuning.html
+  v03-causal-stream: v03-causal-stream.html
+  v04-boundary-modes: v04-boundary-modes.html
+  v05-irregular-grids: v05-irregular-grids.html
+  v06-extensions: v06-extensions.html
+  v07-benchmarks: v07-benchmarks.html
+  v08-real-world: v08-real-world.html
+last_built: 2026-06-11T13:36Z
+urls:
+  reference: https://mkyou.github.io/rLifting/reference
+  article: https://mkyou.github.io/rLifting/articles

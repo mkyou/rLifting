@@ -13,7 +13,11 @@ ilwt(lwt_obj, scheme = NULL)
 
 - lwt_obj:
 
-  Object of class 'lwt' returned by [`lwt()`](lwt.md).
+  Object of class `lwt` returned by
+  [`lwt()`](https://mkyou.github.io/rLifting/reference/lwt.md). The
+  fields `extension`, `ll_k`, and `t` carried by the object are reused
+  to mirror the forward transform; the inverse cannot be invoked with a
+  different boundary mode or grid.
 
 - scheme:
 
@@ -32,6 +36,6 @@ sch = lifting_scheme("haar")
 fwd = lwt(s, sch)
 #> Warning: Residual signal at level 1 has only 2.0 samples.
 rec = ilwt(fwd)
-print(rec) # Should match s
+print(rec)
 #> [1] 1 2 3 4
 ```

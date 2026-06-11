@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>High-Performance Wavelet Lifting Transforms • rLifting</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="High-Performance Wavelet Lifting Transforms">
 <meta name="description" content="Performs Wavelet Lifting Transforms focusing on signal denoising and functional data analysis (FDA). Implements a hybrid architecture with a zero-allocation C++ core for high-performance processing. Features include unified offline (batch) denoising, causal (real-time) filtering using a ring buffer engine, and adaptive recursive thresholding.">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rLifting</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,8 +47,357 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9">
-Performs Wavelet Lifting Transforms focusing on signal denoising and functional data analysis (FDA). Implements a hybrid architecture with a zero-allocation 'C++' core for high-performance processing. Features include unified offline (batch) denoising, causal (real-time) filtering using a ring buffer engine, and adaptive recursive thresholding.
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="rlifting--high-performance-wavelet-lifting-for-r">rLifting — High-Performance Wavelet Lifting for R<a class="anchor" aria-label="anchor" href="#rlifting--high-performance-wavelet-lifting-for-r"></a>
+</h1></div>
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a></p>
+<p><code>rLifting</code> is an R package for signal denoising via the Lifting Scheme (Sweldens, 1996). It provides three processing modes — <strong>offline</strong> (full signal), <strong>causal</strong> (sliding window, no look-ahead), and <strong>stream</strong> (sample-by-sample, persistent state) — under a unified API backed by a zero-allocation C++ engine.</p>
+<hr>
+<div class="section level2">
+<h2 id="why-rlifting">Why rLifting?<a class="anchor" aria-label="anchor" href="#why-rlifting"></a>
+</h2>
+<p>The established wavelet packages in R (<code>wavethresh</code>, <code>adlift</code>, <code>nlt</code>) are designed for offline use. <code>rLifting</code> adds two things none of them offer:</p>
+<ul>
+<li>
+<strong>Causal and stream modes</strong> with a ring-buffer architecture: fixed memory, O(T) total work, microsecond per-sample latency.</li>
+<li>
+<strong>Native irregular-grid support</strong>: pass a sorted <code>t</code> vector to any pipeline function and the predict step uses Lagrange interpolation at the actual sample positions — no separate regularisation step.</li>
+</ul>
+<p>On regular grids, <code>rLifting</code> is ~40× faster per sample than <code>wavethresh</code> and ~40,000× faster than <code>adlift</code>/<code>nlt</code>, while trailing wavethresh by ~18% at the geometric mean MSE level. On irregular grids, it is ~20,000× faster than <code>adlift</code> with comparable accuracy (within ~10% on six of seven signals). Numbers come from <code>data(benchmark_rlifting)</code> and <code>data(benchmark_rlifting_irregular)</code> — 1,000 Monte Carlo replications per cell across the four Donoho–Johnstone test signals.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
+</h2>
+<ul>
+<li>Three processing modes with the same API: <code>denoise_signal_offline</code>, <code>denoise_signal_causal</code>, <code>new_wavelet_stream</code>.</li>
+<li>Six built-in wavelets: <code>haar</code>, <code>db2</code>, <code>cdf53</code>, <code>cdf97</code>, <code>dd4</code>, <code>lazy</code>. Extensible via <code><a href="reference/lift_step.html">lift_step()</a></code> + <code><a href="reference/custom_wavelet.html">custom_wavelet()</a></code>.</li>
+<li>Four shrinkage methods: hard, soft, semisoft (default), SCAD (Antoniadis &amp; Fan, 2001).</li>
+<li>Two threshold-selection rules: universal (VisuShrink, recursive α/β decay) and SURE (SureShrink, per-level Stein risk). <code><a href="reference/tune_alpha_beta.html">tune_alpha_beta()</a></code> minimises SURE to select α and β automatically.</li>
+<li>Five boundary extensions: <code>symmetric</code> (default), <code>periodic</code>, <code>zero</code>, <code>local_linear</code> (OLS extrapolation, neighbourhood <code>ll_k</code>), <code>one_sided</code> (renormalised filter at the edge).</li>
+<li>Irregular-grid support in every mode: pass <code>t</code> to batch functions, or <code>t_val</code> per sample to the stream closure.</li>
+<li>Diagnostic suite: <code><a href="reference/diagnose_wavelet.html">diagnose_wavelet()</a></code> verifies perfect reconstruction, vanishing moments, orthogonality, compact support, and shift sensitivity.</li>
+</ul>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a>
+</h2>
+<p>Numbers from <code>data(benchmark_rlifting)</code> — regular grid, N = 1,000, medians over 1,000 Monte Carlo replications.</p>
+<div class="section level3">
+<h3 id="per-sample-latency-offline-mode">Per-sample latency (offline mode)<a class="anchor" aria-label="anchor" href="#per-sample-latency-offline-mode"></a>
+</h3>
+<table class="table">
+<thead><tr>
+<th align="left">Wavelet</th>
+<th align="right">Median (µs)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left">haar</td>
+<td align="right">0.08</td>
+</tr>
+<tr>
+<td align="left">cdf53</td>
+<td align="right">0.09</td>
+</tr>
+<tr>
+<td align="left">db2</td>
+<td align="right">0.09</td>
+</tr>
+<tr>
+<td align="left">dd4</td>
+<td align="right">0.10</td>
+</tr>
+<tr>
+<td align="left">cdf97</td>
+<td align="right">0.11</td>
+</tr>
+</tbody>
+</table>
+<p>Causal mode: ~10 µs/sample. Stream mode: ~17 µs/sample (~70% overhead over causal, attributable to the R closure call per sample).</p>
+</div>
+<div class="section level3">
+<h3 id="speed-vs-other-packages-offline-regular-grid-per-sample">Speed vs other packages (offline, regular grid, per sample)<a class="anchor" aria-label="anchor" href="#speed-vs-other-packages-offline-regular-grid-per-sample"></a>
+</h3>
+<table class="table">
+<thead><tr>
+<th align="left">Package</th>
+<th align="right">Per-sample (µs)</th>
+<th align="right">vs rLifting</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left">rLifting</td>
+<td align="right">~0.09</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td align="left">wavethresh</td>
+<td align="right">~3.6</td>
+<td align="right">~40×</td>
+</tr>
+<tr>
+<td align="left">adlift</td>
+<td align="right">~3,600</td>
+<td align="right">~40,000×</td>
+</tr>
+<tr>
+<td align="left">nlt</td>
+<td align="right">~3,600</td>
+<td align="right">~40,000×</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="real-world-signal-infant-cardiac-monitoring-n--2048">Real-world signal (infant cardiac monitoring, N = 2,048)<a class="anchor" aria-label="anchor" href="#real-world-signal-infant-cardiac-monitoring-n--2048"></a>
+</h3>
+<p>From <code><a href="articles/v08-real-world.html">vignette("v08-real-world")</a></code> — BabyECG from <code>wavethresh</code>:</p>
+<table class="table">
+<thead><tr>
+<th align="left">Mode</th>
+<th align="center">Per-call (ms)</th>
+<th align="center">Per-sample (µs)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left">Offline (regular)</td>
+<td align="center">0.05</td>
+<td align="center">0.025</td>
+</tr>
+<tr>
+<td align="left">Offline (irregular, 70% retained)</td>
+<td align="center">0.10</td>
+<td align="center">0.071</td>
+</tr>
+<tr>
+<td align="left">Causal (window 256)</td>
+<td align="center">0.25</td>
+<td align="center">0.12</td>
+</tr>
+<tr>
+<td align="left">Stream (full 2,048 samples)</td>
+<td align="center">2.0</td>
+<td align="center">~10</td>
+</tr>
+</tbody>
+</table>
+<p>On the held-out 30% of dropped samples (irregular grid), rLifting achieves <strong>0.97 bpm RMSE</strong> vs 1.03 bpm for interpolate-then-denoise and 1.73 bpm for raw interpolation.</p>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"mkyou/rLifting"</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+</h2>
+<div class="section level3">
+<h3 id="offline-denoising">Offline denoising<a class="anchor" aria-label="anchor" href="#offline-denoising"></a>
+</h3>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mkyou/rLifting" class="external-link">rLifting</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">scheme</span> <span class="op">=</span> <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"cdf53"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">clean</span> <span class="op">=</span> <span class="fu"><a href="reference/denoise_signal_offline.html">denoise_signal_offline</a></span><span class="op">(</span></span>
+<span>  <span class="va">noisy_signal</span>, <span class="va">scheme</span>,</span>
+<span>  levels <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  shrinkage   <span class="op">=</span> <span class="st">"semisoft"</span>,</span>
+<span>  extension   <span class="op">=</span> <span class="st">"symmetric"</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.3</span>, beta <span class="op">=</span> <span class="fl">1.2</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="causal-denoising-sliding-window-no-look-ahead">Causal denoising (sliding window, no look-ahead)<a class="anchor" aria-label="anchor" href="#causal-denoising-sliding-window-no-look-ahead"></a>
+</h3>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">clean_causal</span> <span class="op">=</span> <span class="fu"><a href="reference/denoise_signal_causal.html">denoise_signal_causal</a></span><span class="op">(</span></span>
+<span>  <span class="va">noisy_signal</span>, <span class="va">scheme</span>,</span>
+<span>  window_size <span class="op">=</span> <span class="fl">255</span>, levels <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  shrinkage   <span class="op">=</span> <span class="st">"semisoft"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="stream-processing-sample-by-sample">Stream processing (sample by sample)<a class="anchor" aria-label="anchor" href="#stream-processing-sample-by-sample"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">processor</span> <span class="op">=</span> <span class="fu"><a href="reference/new_wavelet_stream.html">new_wavelet_stream</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"haar"</span><span class="op">)</span>,</span>
+<span>  window_size <span class="op">=</span> <span class="fl">255</span>, levels <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  shrinkage   <span class="op">=</span> <span class="st">"semisoft"</span>, update_freq <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">out</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">noisy_signal</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">noisy_signal</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">out</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">=</span> <span class="fu">processor</span><span class="op">(</span><span class="va">noisy_signal</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="irregular-grid">Irregular grid<a class="anchor" aria-label="anchor" href="#irregular-grid"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Batch (offline or causal): pass t alongside the signal</span></span>
+<span><span class="va">clean_irr</span> <span class="op">=</span> <span class="fu"><a href="reference/denoise_signal_offline.html">denoise_signal_offline</a></span><span class="op">(</span></span>
+<span>  <span class="va">y_irr</span>, <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"cdf53"</span><span class="op">)</span>,</span>
+<span>  t <span class="op">=</span> <span class="va">t_phys</span>, levels <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  extension <span class="op">=</span> <span class="st">"local_linear"</span>,</span>
+<span>  threshold_method <span class="op">=</span> <span class="st">"sure"</span>, shrinkage <span class="op">=</span> <span class="st">"scad"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Stream: pass t_val per sample</span></span>
+<span><span class="va">proc_irr</span> <span class="op">=</span> <span class="fu"><a href="reference/new_wavelet_stream.html">new_wavelet_stream</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"cdf53"</span><span class="op">)</span>, irregular <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  window_size <span class="op">=</span> <span class="fl">255</span>, levels <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">y_irr</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">out</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">=</span> <span class="fu">proc_irr</span><span class="op">(</span><span class="va">y_irr</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, t_val <span class="op">=</span> <span class="va">t_phys</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="automatic-parameter-tuning">Automatic parameter tuning<a class="anchor" aria-label="anchor" href="#automatic-parameter-tuning"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tuned</span> <span class="op">=</span> <span class="fu"><a href="reference/tune_alpha_beta.html">tune_alpha_beta</a></span><span class="op">(</span><span class="va">signal</span>, <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"cdf53"</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">clean</span> <span class="op">=</span> <span class="fu"><a href="reference/denoise_signal_offline.html">denoise_signal_offline</a></span><span class="op">(</span></span>
+<span>  <span class="va">noisy_signal</span>, <span class="fu"><a href="reference/lifting_scheme.html">lifting_scheme</a></span><span class="op">(</span><span class="st">"cdf53"</span><span class="op">)</span>,</span>
+<span>  levels <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="va">tuned</span><span class="op">$</span><span class="va">alpha</span>, beta <span class="op">=</span> <span class="va">tuned</span><span class="op">$</span><span class="va">beta</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<p>Eight vignettes form a self-contained learning path, ordered from tour to reference.</p>
+<table class="table">
+<colgroup>
+<col width="13%">
+<col width="54%">
+<col width="31%">
+</colgroup>
+<thead><tr>
+<th align="left">#</th>
+<th align="left">Identifier</th>
+<th align="left">Topic</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left">1</td>
+<td align="left"><code>v01-introduction</code></td>
+<td align="left">Package overview; three modes; wavelet and threshold choice; irregular grids; quick decision guides</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left"><code>v02-thresholding-and-tuning</code></td>
+<td align="left">MAD noise estimate; universal vs SURE; α/β recursion; <code><a href="reference/tune_alpha_beta.html">tune_alpha_beta()</a></code> walkthrough; shrinkage choice</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left"><code>v03-causal-stream</code></td>
+<td align="left">Causality penalty; <code>window_size</code> and <code>update_freq</code> heuristics; per-sample latency by mode and wavelet</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left"><code>v04-boundary-modes</code></td>
+<td align="left">The five boundary extensions; empirical impact; wavelet-dependent recommendations</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left"><code>v05-irregular-grids</code></td>
+<td align="left">Lagrange interpolation in predict steps; wavelet eligibility; robust defaults from benchmark</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="left"><code>v06-extensions</code></td>
+<td align="left">Built-in wavelet reference; custom wavelets; diagnostics; low-level pipeline</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td align="left"><code>v07-benchmarks</code></td>
+<td align="left">Full empirical comparison vs <code>wavethresh</code>, <code>adlift</code>, <code>nlt</code>; speed and MSE across modes, signals, wavelets, boundaries</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td align="left"><code>v08-real-world</code></td>
+<td align="left">End-to-end case study on infant cardiac monitoring (BabyECG); offline, irregular-grid, and stream modes</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v01-introduction"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v02-thresholding-and-tuning"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v03-causal-stream"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v04-boundary-modes"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v05-irregular-grids"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v06-extensions"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v07-benchmarks"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"v08-real-world"</span>, package <span class="op">=</span> <span class="st">"rLifting"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="design-notes-instnotes">Design notes (<code>inst/notes/</code>)<a class="anchor" aria-label="anchor" href="#design-notes-instnotes"></a>
+</h3>
+<p>Five implementation-reference documents covering the C++ internals, ordered from broad to deep:</p>
+<table class="table">
+<colgroup>
+<col width="41%">
+<col width="58%">
+</colgroup>
+<thead><tr>
+<th align="left">Doc</th>
+<th align="left">Scope</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left"><code>00-design-overview</code></td>
+<td align="left">Architectural index: package layers, central abstractions, four modes, pointers to subsystem docs</td>
+</tr>
+<tr>
+<td align="left"><code>01-lifting-scheme-and-transform</code></td>
+<td align="left">
+<code>LiftingStep</code> struct; polyphase decomposition; predict/update math; irregular path with full Lagrange formula</td>
+</tr>
+<tr>
+<td align="left"><code>02-adaptive-thresholding</code></td>
+<td align="left">MAD estimator; universal and SURE rules; α/β recursion; four shrinkage formulas; <code><a href="reference/tune_alpha_beta.html">tune_alpha_beta()</a></code> pipeline</td>
+</tr>
+<tr>
+<td align="left"><code>03-zero-allocation-engine</code></td>
+<td align="left">Ring buffer mechanics; pre-allocated workspaces; XPtr finalizer; per-sample hot path</td>
+</tr>
+<tr>
+<td align="left"><code>04-boundary-and-threshold</code></td>
+<td align="left">Four mandatory boundary code paths; local-linear OLS; <code>nth_element</code> MAD; shrinkage implementations</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="roadmap">Roadmap<a class="anchor" aria-label="anchor" href="#roadmap"></a>
+</h2>
+<ul>
+<li>
+<strong>Multivariate denoising</strong>: joint denoising of correlated signals incorporating covariance structure.</li>
+<li>
+<strong>Coefficient access</strong>: expose intermediate LWT coefficients from all pipeline functions for inspection and custom post-processing.</li>
+</ul>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>MIT — see <code>LICENSE</code>.</p>
+</div>
+</div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">

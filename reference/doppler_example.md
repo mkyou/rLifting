@@ -1,7 +1,8 @@
 # Noisy Doppler Signal Example
 
-A synthetic dataset containing a Doppler signal contaminated with
-Gaussian noise. Used in the "General Usage" vignette.
+Synthetic Doppler signal contaminated with Gaussian noise. Used in
+[`vignette("v01-introduction")`](https://mkyou.github.io/rLifting/articles/v01-introduction.md)
+and the boundary-mode comparison.
 
 ## Usage
 
@@ -15,7 +16,7 @@ A data frame with 2048 rows and 3 columns:
 
 - index:
 
-  Time index.
+  Time index (1..2048).
 
 - original:
 
@@ -23,4 +24,4 @@ A data frame with 2048 rows and 3 columns:
 
 - noisy:
 
-  The signal with added Gaussian noise (sd=0.5).
+  The signal with added Gaussian noise (sd = 0.5).
