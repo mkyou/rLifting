@@ -23,3 +23,4 @@
 ^vignettes/.*\.R$
 ^data/tmp_
 ^logs$
+^TODO\.md$
